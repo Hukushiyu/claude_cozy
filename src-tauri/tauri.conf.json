@@ -22,7 +22,8 @@
         "resizable": true,
         "fullscreen": false,
         "decorations": true,
-        "center": true
+        "center": true,
+        "icon": "icons/icon.png"
       }
     ],
     "security": {
@@ -44,6 +45,7 @@
       "certificateThumbprint": null,
       "digestAlgorithm": "sha256",
       "timestampUrl": "",
+      "icon": "icons/icon.ico",
       "nsis": {
         "installerIcon": "icons/icon.ico",
         "installMode": "perMachine",

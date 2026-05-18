@@ -2,7 +2,7 @@
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "Claude Terminal",
   "version": "0.6.0",
-  "identifier": "com.claudeterminal.app",
+  "identifier": "com.claudeterminal",
   "build": {
     "frontendDist": "../dist",
     "devUrl": "http://localhost:1420",

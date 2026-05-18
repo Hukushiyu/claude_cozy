@@ -72,10 +72,14 @@ jobs:
       - name: Build Mac ARM app
         run: npm run tauri:build:mac:arm64
 
+      - name: Create zip from .app bundle
+        run: |
+          cd src-tauri/target/aarch64-apple-darwin/release/bundle/macos
+          zip -r "Claude Terminal_0.6.0_aarch64.zip" "Claude Terminal.app"
+          mv "Claude Terminal_0.6.0_aarch64.zip" ../
+
       - name: Upload Mac ARM artifact
         uses: actions/upload-artifact@v4
         with:
           name: claude-terminal-mac-arm
-          path: |
-            src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/*.dmg
-            src-tauri/target/aarch64-apple-darwin/release/bundle/macos/*.app.tar.gz
+          path: src-tauri/target/aarch64-apple-darwin/release/bundle/*.zip

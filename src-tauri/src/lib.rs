@@ -19,9 +19,11 @@ pub fn run() {
             .build(),
         )?;
 
-        // Open DevTools in debug mode
-        let window = app.get_webview_window("main").unwrap();
-        window.open_devtools();
+        // DevTools can be opened manually with F12 or by adding devtools feature flag
+        // Commenting out auto-open to avoid build errors when devtools feature is not enabled
+        // let window = app.get_webview_window("main").unwrap();
+        // #[cfg(debug_assertions)]
+        // window.open_devtools();
       }
       Ok(())
     })

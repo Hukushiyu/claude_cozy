@@ -6,6 +6,7 @@ interface ProjectStore {
   projectPath: string | null;
   fileTree: FileNode[];
   isLoadingTree: boolean;
+  isSelectingProject: boolean;
   error: string | null;
 
   selectProject: () => Promise<void>;
@@ -17,11 +18,13 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
   projectPath: null,
   fileTree: [],
   isLoadingTree: false,
+  isSelectingProject: false,
   error: null,
 
   selectProject: async () => {
     try {
       console.log('selectProject called');
+      set({ isSelectingProject: true });
 
       console.log('Calling tauriAPI.selectProject()');
       const path = await tauriAPI.selectProject();
@@ -36,6 +39,8 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
       set({
         error: error instanceof Error ? error.message : 'Failed to select project'
       });
+    } finally {
+      set({ isSelectingProject: false });
     }
   },
 

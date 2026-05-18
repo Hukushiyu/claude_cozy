@@ -21,7 +21,7 @@ export function AppShell() {
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showClearHistoryModal, setShowClearHistoryModal] = useState(false);
   const [cliError, setCliError] = useState<string | null>(null);
-  const { projectPath, selectProject } = useProjectStore();
+  const { projectPath, selectProject, isSelectingProject } = useProjectStore();
   const { assistantName, loadSettings } = useSettingsStore();
 
   // Load settings on mount
@@ -138,16 +138,26 @@ export function AppShell() {
                 </div>
                 <button
                   onClick={selectProject}
-                  className="w-full px-4 py-2 text-white rounded transition-opacity text-sm font-medium app-no-drag"
+                  disabled={isSelectingProject}
+                  className="w-full px-4 py-2 text-white rounded transition-opacity text-sm font-medium app-no-drag disabled:opacity-50 disabled:cursor-not-allowed"
                   style={{ backgroundColor: 'var(--theme-accent)' }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = 'var(--theme-accentHover)';
+                    if (!isSelectingProject) {
+                      e.currentTarget.style.backgroundColor = 'var(--theme-accentHover)';
+                    }
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.backgroundColor = 'var(--theme-accent)';
                   }}
                 >
-                  Change Project Folder
+                  {isSelectingProject ? (
+                    <>
+                      <span className="inline-block animate-spin mr-2">⏳</span>
+                      Opening file picker...
+                    </>
+                  ) : (
+                    'Change Project Folder'
+                  )}
                 </button>
 
                 {projectPath && (

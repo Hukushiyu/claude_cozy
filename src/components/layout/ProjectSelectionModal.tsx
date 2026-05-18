@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useProjectStore } from '../../stores/projectStore';
 
 interface ProjectSelectionModalProps {
   onSelectProject: () => void;
@@ -7,6 +8,7 @@ interface ProjectSelectionModalProps {
 export function ProjectSelectionModal({ onSelectProject }: ProjectSelectionModalProps) {
   const [dontShowAgain, setDontShowAgain] = useState(false);
   const [isSimpleMode, setIsSimpleMode] = useState(false);
+  const { isSelectingProject } = useProjectStore();
 
   useEffect(() => {
     // Check if user has seen the welcome before
@@ -40,9 +42,17 @@ export function ProjectSelectionModal({ onSelectProject }: ProjectSelectionModal
           {/* Action button */}
           <button
             onClick={handleSelectProject}
-            className="w-full py-3 px-6 bg-claude-accent text-white rounded-lg font-medium hover:opacity-90 transition-all hover:shadow-lg text-base"
+            disabled={isSelectingProject}
+            className="w-full py-3 px-6 bg-claude-accent text-white rounded-lg font-medium hover:opacity-90 transition-all hover:shadow-lg text-base disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Select Project Folder
+            {isSelectingProject ? (
+              <>
+                <span className="inline-block animate-spin mr-2">⏳</span>
+                Opening file picker...
+              </>
+            ) : (
+              'Select Project Folder'
+            )}
           </button>
         </div>
       </div>
@@ -103,9 +113,17 @@ export function ProjectSelectionModal({ onSelectProject }: ProjectSelectionModal
         {/* Action button */}
         <button
           onClick={handleSelectProject}
-          className="w-full py-3 px-6 bg-claude-accent text-white rounded-lg font-medium hover:opacity-90 transition-all hover:shadow-lg text-base"
+          disabled={isSelectingProject}
+          className="w-full py-3 px-6 bg-claude-accent text-white rounded-lg font-medium hover:opacity-90 transition-all hover:shadow-lg text-base disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Select Project Folder
+          {isSelectingProject ? (
+            <>
+              <span className="inline-block animate-spin mr-2">⏳</span>
+              Opening file picker...
+            </>
+          ) : (
+            'Select Project Folder'
+          )}
         </button>
 
         {/* Footer note */}

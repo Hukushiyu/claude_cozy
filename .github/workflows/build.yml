@@ -12,6 +12,10 @@ on:
   # Allow manual trigger from Actions tab
   workflow_dispatch:
 
+env:
+  # Opt into Node.js 24 for GitHub Actions (becomes default June 2nd, 2026)
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   # Windows Build
   build-windows:

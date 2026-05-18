@@ -75,8 +75,8 @@ jobs:
       - name: Create zip from .app bundle
         run: |
           cd src-tauri/target/aarch64-apple-darwin/release/bundle/macos
-          zip -r "Claude Terminal_0.6.1_aarch64.zip" "Claude Terminal.app"
-          mv "Claude Terminal_0.6.1_aarch64.zip" ../
+          zip -r "Claude Terminal_0.6.2_aarch64.zip" "Claude Terminal.app"
+          mv "Claude Terminal_0.6.2_aarch64.zip" ../
 
       - name: Upload Mac ARM artifact
         uses: actions/upload-artifact@v4

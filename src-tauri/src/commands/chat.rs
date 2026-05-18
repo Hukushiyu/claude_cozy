@@ -4,6 +4,7 @@ use std::sync::{Arc, Mutex};
 use tauri::{AppHandle, Emitter};
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::process::Command as TokioCommand;
+use crate::commands::cli::find_claude_cli;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -65,8 +66,10 @@ pub async fn send_message(
     println!("[CHAT] Command: claude {:?}", args);
 
     // Spawn Claude process
+    let claude_path = find_claude_cli();
+    println!("[CHAT] Using Claude CLI at: {}", claude_path);
     println!("[CHAT] Spawning Claude CLI process...");
-    let mut child = TokioCommand::new("claude")
+    let mut child = TokioCommand::new(&claude_path)
         .args(&args)
         .current_dir(&project_path)
         .stdout(Stdio::piped())

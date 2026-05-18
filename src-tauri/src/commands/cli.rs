@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::process::Command;
+use std::path::PathBuf;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ClaudeStatus {
@@ -8,10 +9,46 @@ pub struct ClaudeStatus {
     pub error: Option<String>,
 }
 
+/// Find the Claude CLI executable in common locations
+/// Returns the full path or "claude" as fallback
+pub fn find_claude_cli() -> String {
+    // Common installation paths for Claude CLI
+    let possible_paths = vec![
+        "/usr/local/bin/claude",
+        "/opt/homebrew/bin/claude",
+        "/opt/local/bin/claude",
+        "~/.local/bin/claude",
+        "/usr/bin/claude",
+    ];
+
+    // Check each path
+    for path_str in possible_paths {
+        let path = if path_str.starts_with('~') {
+            // Expand ~ to home directory
+            if let Ok(home) = std::env::var("HOME") {
+                PathBuf::from(path_str.replacen("~", &home, 1))
+            } else {
+                continue;
+            }
+        } else {
+            PathBuf::from(path_str)
+        };
+
+        if path.exists() {
+            return path.to_string_lossy().to_string();
+        }
+    }
+
+    // Fallback to just "claude" and hope it's in PATH
+    "claude".to_string()
+}
+
 #[tauri::command]
 pub fn check_claude_status() -> Result<ClaudeStatus, String> {
+    let claude_path = find_claude_cli();
+
     // Check if Claude CLI is installed
-    let version_check = Command::new("claude")
+    let version_check = Command::new(&claude_path)
         .arg("--version")
         .output();
 
@@ -24,7 +61,7 @@ pub fn check_claude_status() -> Result<ClaudeStatus, String> {
     }
 
     // Check authentication status
-    let auth_check = Command::new("claude")
+    let auth_check = Command::new(&claude_path)
         .args(&["auth", "status", "--output-format", "json"])
         .output();
 

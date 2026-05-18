@@ -116,12 +116,19 @@ export function PermissionStatusButton() {
     <button
       onClick={permissionsApproved ? handleReset : handleManualApprove}
       disabled={false}
-      className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all ${
-        permissionsApproved ? 'hover:opacity-80 cursor-pointer' : 'cursor-default'
-      }`}
+      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition-all text-xs font-medium"
       style={{
         backgroundColor: permissionsApproved ? 'rgba(34, 197, 94, 0.1)' : 'rgba(156, 163, 175, 0.1)',
-        border: `1.5px solid ${permissionsApproved ? 'rgb(34, 197, 94)' : 'rgb(156, 163, 175)'}`
+        borderColor: permissionsApproved ? 'rgb(34, 197, 94)' : 'rgb(156, 163, 175)',
+        color: permissionsApproved ? 'rgb(21, 128, 61)' : 'rgb(107, 114, 128)'
+      }}
+      onMouseEnter={(e) => {
+        if (permissionsApproved) {
+          e.currentTarget.style.backgroundColor = 'rgba(34, 197, 94, 0.15)';
+        }
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.backgroundColor = permissionsApproved ? 'rgba(34, 197, 94, 0.1)' : 'rgba(156, 163, 175, 0.1)';
       }}
       title={
         permissionsApproved
@@ -135,12 +142,7 @@ export function PermissionStatusButton() {
           backgroundColor: permissionsApproved ? 'rgb(34, 197, 94)' : 'rgb(156, 163, 175)'
         }}
       />
-      <span
-        className="text-xs font-medium"
-        style={{
-          color: permissionsApproved ? 'rgb(34, 197, 94)' : 'rgb(107, 114, 128)'
-        }}
-      >
+      <span>
         {permissionsApproved ? 'Tools Approved' : 'Will Prompt'}
       </span>
     </button>

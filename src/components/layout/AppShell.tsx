@@ -202,10 +202,21 @@ export function AppShell() {
           <div className="ml-auto flex items-center gap-2 app-no-drag">
             <button
               onClick={() => setShowClearHistoryModal(true)}
-              className="px-3 py-1.5 bg-red-50 hover:bg-red-100 border border-red-200 rounded transition-colors text-red-700 hover:text-red-800 text-sm font-medium flex items-center gap-1.5"
+              className="px-3 py-1.5 rounded-lg border transition-colors text-xs font-medium flex items-center gap-1.5"
+              style={{
+                backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                borderColor: 'rgb(239, 68, 68)',
+                color: 'rgb(185, 28, 28)'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.15)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.1)';
+              }}
               title="Clear conversation history"
             >
-              <span className="text-base">🗑️</span>
+              <span>🗑️</span>
               <span>Clear History</span>
             </button>
 
@@ -215,25 +226,41 @@ export function AppShell() {
 
             <button
               onClick={() => setShowSettingsModal(true)}
-              className="p-2 rounded transition-colors"
-              style={{ color: 'var(--theme-text)' }}
+              className="px-3 py-1.5 rounded-lg border transition-colors text-xs font-medium flex items-center gap-1.5"
+              style={{
+                backgroundColor: 'var(--theme-bg)',
+                borderColor: 'var(--theme-border)',
+                color: 'var(--theme-text)'
+              }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.backgroundColor = 'var(--theme-hover)';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'transparent';
+                e.currentTarget.style.backgroundColor = 'var(--theme-bg)';
               }}
               title="Settings"
             >
-              ⚙️
+              <span>⚙️</span>
+              <span>Settings</span>
             </button>
 
             <button
               onClick={() => setShowCommandsModal(true)}
-              className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded transition-colors text-blue-700 hover:text-blue-800 text-sm font-medium flex items-center gap-1.5"
+              className="px-3 py-1.5 rounded-lg border transition-colors text-xs font-medium flex items-center gap-1.5"
+              style={{
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                borderColor: 'rgb(59, 130, 246)',
+                color: 'rgb(30, 64, 175)'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = 'rgba(59, 130, 246, 0.15)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'rgba(59, 130, 246, 0.1)';
+              }}
               title="View available commands and skills (Ctrl+/)"
             >
-              <span className="text-base">?</span>
+              <span>?</span>
               <span>Help</span>
             </button>
           </div>

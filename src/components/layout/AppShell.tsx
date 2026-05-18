@@ -104,8 +104,8 @@ export function AppShell() {
       <div className="flex h-screen overflow-hidden flex-col" style={{ backgroundColor: 'var(--theme-bg)' }}>
         {/* Mac Title Bar - draggable area for traffic lights */}
         {isMac && (
-          <div className="h-10 flex-shrink-0 app-drag-region" style={{ backgroundColor: 'var(--theme-bg)' }}>
-            {/* Empty space for macOS traffic lights - they overlay at x:15 y:15 */}
+          <div className="h-7 flex-shrink-0 app-drag-region" style={{ backgroundColor: 'var(--theme-bg)' }}>
+            {/* Empty space for macOS traffic lights - they overlay at top left */}
           </div>
         )}
 

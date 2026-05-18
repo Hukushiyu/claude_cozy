@@ -1,0 +1,31 @@
+# Dependencies
+node_modules/
+src-tauri/target/
+
+# Build outputs
+dist/
+dist-electron/
+src-tauri/target/release/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Temporary files
+*.tmp
+*.temp
+.claude/
+.claude-desktop/
+
+# Archives
+*.zip
+*.tar.gz
+*.dmg

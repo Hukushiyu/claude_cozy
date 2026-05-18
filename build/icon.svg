@@ -1,0 +1,31 @@
+<svg width="256" height="256" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
+  <!-- Main hexagon -->
+  <polygon points="128,20 220,70 220,170 128,220 36,170 36,70"
+           fill="#60a5fa"
+           stroke="#1e40af"
+           stroke-width="4"/>
+
+  <!-- Inner chat window shape -->
+  <rect x="70" y="80" width="116" height="96" rx="8" fill="#1a1a1a" opacity="0.9"/>
+
+  <!-- Chat window header -->
+  <rect x="70" y="80" width="116" height="18" rx="8" fill="#2a2a2a" opacity="0.9"/>
+  <circle cx="80" cy="89" r="2.5" fill="#ff5f56"/>
+  <circle cx="88" cy="89" r="2.5" fill="#ffbd2e"/>
+  <circle cx="96" cy="89" r="2.5" fill="#27c93f"/>
+
+  <!-- User message bubble (right side) -->
+  <rect x="130" y="108" width="45" height="16" rx="8" fill="#2563eb" opacity="0.9"/>
+
+  <!-- Assistant message bubble (left side) -->
+  <rect x="80" y="132" width="55" height="16" rx="8" fill="#2a2a2a" opacity="0.9"/>
+  <line x1="85" y1="140" x2="95" y2="140" stroke="#4ade80" stroke-width="2" stroke-linecap="round"/>
+  <line x1="98" y1="140" x2="125" y2="140" stroke="#4ade80" stroke-width="2" stroke-linecap="round"/>
+
+  <!-- Terminal prompt at bottom -->
+  <text x="78" y="165" font-family="monospace" font-size="13" fill="#4ade80" font-weight="bold">$ claude...</text>
+
+  <!-- Accent corner triangles -->
+  <polygon points="128,20 150,40 106,40" fill="#4ade80" opacity="0.6"/>
+  <polygon points="128,220 106,200 150,200" fill="#4ade80" opacity="0.6"/>
+</svg>

@@ -6,16 +6,6 @@ import { ask } from '@tauri-apps/plugin-dialog';
 export function PermissionStatusButton() {
   const [permissionsApproved, setPermissionsApproved] = useState(false);
 
-  // Check permission status on mount and after any changes
-  const checkStatus = async () => {
-    try {
-      const status = await tauriAPI.getPermissionStatus();
-      setPermissionsApproved(status);
-    } catch (error) {
-      console.error('Failed to get permission status:', error);
-    }
-  };
-
   useEffect(() => {
     // Clear any old localStorage keys from previous versions
     localStorage.removeItem('toolPermissionsApproved');

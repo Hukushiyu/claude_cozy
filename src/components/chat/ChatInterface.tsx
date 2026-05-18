@@ -180,7 +180,8 @@ export function ChatInterface() {
     }
 
     try {
-      await tauriAPI.archiveHistory(projectPath);
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      await tauriAPI.archiveHistory(projectPath, `archive-${timestamp}`);
       setDismissedWarningCount(0);
       await ask(
         'Your conversation history has been saved to an archive file and the display has been cleared. ' +

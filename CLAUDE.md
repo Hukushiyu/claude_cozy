@@ -59,39 +59,35 @@ A desktop GUI wrapper for Claude CLI built with Tauri + Rust backend for improve
   - `Cargo.toml` - Rust dependencies
   - `tauri.conf.json` - Tauri configuration
 
-## Current Features (v0.6.0 - In Development)
+## Current Features (v0.6.3 - Released May 18, 2026)
 
-All features from Electron v0.5.2 have been successfully migrated:
+All features from Electron v0.5.2 have been successfully migrated plus new enhancements:
 
-### ✅ Chat & Permissions (Complete - May 16, 2026)
+### ✅ Core Features
 1. **Chat interface** - Claude CLI streaming with full event handling
-2. **Permission system** - Modal-based tool approval with session/persistent modes
+2. **Permission system** - Simplified modal (shows file path + size, not full content)
 3. **Thinking indicators** - Status updates with timer display
 4. **Tool execution** - All Claude CLI tools working (Read, Write, Edit, Bash, etc.)
-5. **Message retry** - Invisible retry after permission approval (no duplicate user messages)
-6. **Output suppression** - Failed attempts properly hidden from user
-7. **Temporary vs persistent approval** - Modal = session only, button = persists across reloads
-
-### ✅ Other Features (Already Working - v0.6.1)
-8. Project selection with folder picker
-9. File tree with lazy loading and .gitignore support
-10. File preview with syntax highlighting (text files + images)
-11. Conversation history (save/load/archive)
-12. Theme system (6 themes)
-13. Model selector (Sonnet 4.6, Opus 4.7, Haiku 4.5)
-14. CLI authentication checks
-15. Terminal launcher for auth
-16. **@ File references** - Click @ button on file hover to insert reference into chat
+5. **Tool cards** - Improved display (shows "Executing..." instead of empty {})
+6. **Message retry** - Invisible retry after permission approval
+7. **Project selection** - Folder picker with file tree
+8. **File tree** - Lazy loading, .gitignore support, search
+9. **File preview** - Text files with syntax highlighting + images (PNG, JPG, GIF, SVG, etc.)
+10. **@ File references** - Click @ button on file hover to insert reference into chat
+11. **Conversation history** - Save/load/archive with CLI integration
+12. **Theme system** - 6 color schemes
+13. **Model selector** - Sonnet 4.6, Opus 4.7, Haiku 4.5
+14. **CLI authentication** - Auto-check with terminal launcher
+15. **Auto-update system** - Checks GitHub releases on launch + manual check in Settings
 
 ### 🔮 Future Enhancements
 1. **HTML5 Drag & Drop** - Enable native drag-drop for file references
    - Current limitation: Tauri intercepts drag events for external file drops
-   - Potential solution: Set `dragDropEnabled: false` in tauri.conf.json
-   - Trade-off: Would disable dropping external files into app
    - Status: Button implementation works well, drag-drop is optional enhancement
 2. **Git Integration** - Restore Git status indicators and actions
 3. **Session Browser UI** - Browse and restore past CLI sessions (backend complete)
 4. **CLI Flags Modal** - GUI interface for advanced CLI options (--fork-session, --effort, --system-prompt, etc.)
+5. **Signed updates** - Full Tauri updater with automatic download/install
 
 ## Development Setup
 

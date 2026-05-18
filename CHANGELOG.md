@@ -1,0 +1,124 @@
+# Changelog
+
+All notable changes to Claude Terminal will be documented in this file.
+
+## [0.6.3] - 2026-05-18
+
+### Added
+- **Auto-update system** - Checks GitHub releases on app launch
+- **Manual update check** - Button in Settings to check for updates
+- **Image preview support** - View PNG, JPG, GIF, SVG, WebP, ICO, BMP in file preview modal
+- **@ File reference button** - Click @ button when hovering files to insert reference
+
+### Improved
+- **Permission modal** - Now shows file path + size instead of full content (less confusing)
+- **Tool cards** - Display "Executing [Tool]..." instead of empty {} when input is missing
+- **Tool card expanded view** - Hides empty input section entirely
+- **Version display** - All version numbers synchronized (sidebar shows v0.6.3)
+
+### Fixed
+- **File preview** - Text files now work with proper absolute path handling
+- **Empty tool input** - Tool cards no longer show confusing empty curly braces
+
+### Technical
+- Removed Git status indicators (simplified file tree)
+- GitHub API integration for update checks
+- Base64 file reading for binary files (images)
+- Removed Tauri updater plugin (using simpler GitHub API approach)
+
+## [0.6.2] - 2026-05-18
+
+### Added
+- Drag store for file reference state management
+
+### Improved
+- Click-to-insert file references (more reliable than drag-drop in Tauri)
+
+### Fixed
+- Tauri drag-drop blocked by internal event interception
+
+### Technical
+- Documented HTML5 drag-drop limitation and workaround
+
+## [0.6.1] - 2026-05-17
+
+### Added
+- Mac CLI path detection (searches common install locations)
+- Loading indicators for project selection and app initialization
+
+### Fixed
+- **CRITICAL:** Mac Claude CLI connection (shell spawning)
+- **CRITICAL:** Mac window dragging (webkit-app-region CSS)
+- Mac auth status parsing (removed unsupported --output-format flag)
+- NSIS installer language (changed from "en-US" to "English")
+- Windows icon (multi-resolution .ico generation)
+- Mac dock icon (replaced with custom icon.icns)
+
+### Technical
+- Shell spawning changed to `shell: true` on all platforms
+- Drag region CSS classes for Mac window chrome
+
+## [0.6.0] - 2026-05-16
+
+### Added
+- **Tauri migration complete** - Full Rust backend replacing Electron
+- All Electron v0.5.2 features migrated
+- Chat interface with streaming
+- Permission system (modal-based tool approval)
+- File tree with lazy loading
+- File preview with syntax highlighting
+- Conversation history (save/load/archive)
+- Theme system (6 themes)
+- Model selector
+- CLI authentication checks
+
+### Technical
+- Rust + Tauri 2.x architecture
+- 90%+ smaller bundle size vs Electron
+- Native OS WebView (no bundled Chromium)
+
+## [0.5.2] - 2026-05-12 (Electron)
+
+### Added
+- Terminal launcher for authentication
+- Error recovery system
+- Drag & drop file references (Phase 1 - basic implementation)
+
+### Improved
+- Error handling with visual banners
+- Loading state management
+- Input re-enables after errors
+
+## [0.5.1] - 2026-05-07 (Electron)
+
+### Added
+- Assistant name customization
+- CLI authentication check on startup
+
+### Fixed
+- Auth status parsing
+
+## [0.5.0] - 2026-05-06 (Electron)
+
+### Added
+- Initial release with full UX features
+- Animated thinking indicators
+- Forced project selection on launch
+- Conversation history persistence
+- Commands & Skills reference (Ctrl+/)
+- File tree operations (preview, search, context menu)
+- Theme system
+- Permission system
+
+---
+
+## Version History Summary
+
+- **0.6.x** - Tauri migration + updates + UX polish
+- **0.5.x** - Electron version with full features
+- **0.1.x** - Initial prototypes
+
+[0.6.3]: https://github.com/Hukushiyu/claude_terminal/releases/tag/0.6.3
+[0.6.2]: https://github.com/Hukushiyu/claude_terminal/releases/tag/0.6.2
+[0.6.1]: https://github.com/Hukushiyu/claude_terminal/releases/tag/0.6.1
+[0.6.0]: https://github.com/Hukushiyu/claude_terminal/releases/tag/0.6.0

@@ -61,8 +61,9 @@ pub fn check_claude_status() -> Result<ClaudeStatus, String> {
     }
 
     // Check authentication status
+    // Note: auth status doesn't support --output-format, just run it normally
     let auth_check = Command::new(&claude_path)
-        .args(&["auth", "status", "--output-format", "json"])
+        .args(&["auth", "status"])
         .output();
 
     match auth_check {
@@ -83,21 +84,35 @@ pub fn check_claude_status() -> Result<ClaudeStatus, String> {
                 });
             }
 
-            if let Ok(json) = serde_json::from_str::<serde_json::Value>(&stdout) {
-                println!("[CLI] Parsed JSON: {:?}", json);
-                let authenticated = json.get("authenticated")
-                    .and_then(|v| v.as_bool())
-                    .unwrap_or(false);
+            // Parse plain text output from "claude auth status"
+            // It outputs something like "✓ Authenticated as user@example.com" or "✗ Not authenticated"
+            let output_text = stdout.trim();
+            println!("[CLI] Auth status output: '{}'", output_text);
 
+            // Look for success indicators
+            let authenticated = output_text.contains("✓")
+                || output_text.to_lowercase().contains("authenticated as")
+                || output_text.to_lowercase().contains("logged in");
+
+            let not_authenticated = output_text.contains("✗")
+                || output_text.to_lowercase().contains("not authenticated")
+                || output_text.to_lowercase().contains("not logged in");
+
+            if authenticated {
                 Ok(ClaudeStatus {
                     installed: true,
-                    authenticated,
-                    error: if authenticated { None } else { Some("Not authenticated".to_string()) },
+                    authenticated: true,
+                    error: None,
+                })
+            } else if not_authenticated {
+                Ok(ClaudeStatus {
+                    installed: true,
+                    authenticated: false,
+                    error: Some("Not authenticated - run 'claude auth login'".to_string()),
                 })
             } else {
-                println!("[CLI] Failed to parse JSON. Raw output: '{}'", stdout);
-                // If we can't parse but the command succeeded, assume authenticated
-                // This is more graceful than showing an error when the app works fine
+                // Unknown output format, but command succeeded - assume OK
+                println!("[CLI] Unknown auth status format, assuming authenticated");
                 Ok(ClaudeStatus {
                     installed: true,
                     authenticated: true,

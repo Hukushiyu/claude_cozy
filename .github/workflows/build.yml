@@ -76,10 +76,10 @@ jobs:
         run: |
           cd src-tauri/target/aarch64-apple-darwin/release/bundle/macos
           zip -r "Claude Terminal_0.6.2_aarch64.zip" "Claude Terminal.app"
-          mv "Claude Terminal_0.6.2_aarch64.zip" ../
+          mv "Claude Terminal_0.6.2_aarch64.zip" ../../
 
       - name: Upload Mac ARM artifact
         uses: actions/upload-artifact@v4
         with:
           name: claude-terminal-mac-arm
-          path: src-tauri/target/aarch64-apple-darwin/release/bundle/*.zip
+          path: src-tauri/target/aarch64-apple-darwin/release/bundle/Claude Terminal_0.6.2_aarch64.zip

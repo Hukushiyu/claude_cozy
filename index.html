@@ -5,8 +5,54 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Claude Terminal</title>
+    <style>
+      /* Loading screen - shown before React loads */
+      #app-loading {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #F5F1EB;
+        z-index: 9999;
+      }
+
+      #app-loading .loader {
+        text-align: center;
+      }
+
+      #app-loading .icon {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        animation: bounce 1s ease-in-out infinite;
+      }
+
+      @keyframes bounce {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-20px); }
+      }
+
+      #app-loading .title {
+        font-size: 1.125rem;
+        font-weight: 500;
+        color: #374151;
+        margin-bottom: 0.5rem;
+      }
+
+      #app-loading .subtitle {
+        font-size: 0.875rem;
+        color: #6B7280;
+      }
+    </style>
   </head>
   <body>
+    <div id="app-loading">
+      <div class="loader">
+        <div class="icon">💬</div>
+        <div class="title">Claude Terminal</div>
+        <div class="subtitle">Loading...</div>
+      </div>
+    </div>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

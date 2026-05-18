@@ -43,39 +43,8 @@ jobs:
             src-tauri/target/release/bundle/nsis/*.exe
             src-tauri/target/release/bundle/msi/*.msi
 
-  # Mac Intel Build
-  build-mac-intel:
-    runs-on: macos-13  # Intel Mac
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: x86_64-apple-darwin
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Build Mac Intel app
-        run: npm run tauri:build:mac:x64
-
-      - name: Upload Mac Intel artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: claude-terminal-mac-intel
-          path: |
-            src-tauri/target/release/bundle/dmg/*.dmg
-            src-tauri/target/release/bundle/macos/*.app.tar.gz
-
   # Mac ARM Build (M1/M2/M3)
+  # Intel Mac build commented out - ARM users can use this, Intel users will use Rosetta 2
   build-mac-arm:
     runs-on: macos-14  # ARM Mac (M1)
 

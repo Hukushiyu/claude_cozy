@@ -20,6 +20,7 @@ export function FilePreviewModal({ isOpen, onClose, filePath, fileName }: FilePr
     if (!isOpen || !filePath) return;
 
     const loadFileContent = async () => {
+      console.log('[FilePreview] Loading file:', filePath);
       setIsLoading(true);
       setError(null);
       setContent('');
@@ -28,6 +29,7 @@ export function FilePreviewModal({ isOpen, onClose, filePath, fileName }: FilePr
       try {
         // Get extension from filename
         const extension = fileName.split('.').pop()?.toLowerCase() || '';
+        console.log('[FilePreview] Extension:', extension);
 
         // Define allowed text extensions
         const textExtensions = [
@@ -53,7 +55,9 @@ export function FilePreviewModal({ isOpen, onClose, filePath, fileName }: FilePr
         }
 
         // For text files, read the content (no size check for now)
+        console.log('[FilePreview] Reading file content...');
         const fileContent = await tauriAPI.readFile(filePath);
+        console.log('[FilePreview] File content length:', fileContent.length);
 
         // Basic size check after reading
         if (fileContent.length > 1024 * 1024) { // 1 MB
@@ -62,8 +66,10 @@ export function FilePreviewModal({ isOpen, onClose, filePath, fileName }: FilePr
           return;
         }
 
+        console.log('[FilePreview] Setting content, preview should show');
         setContent(fileContent);
       } catch (err) {
+        console.error('[FilePreview] Error loading file:', err);
         setError(err instanceof Error ? err.message : 'Failed to load file');
         setContent('');
         setImageData('');

@@ -275,6 +275,7 @@ function FileTreeNode({ node, level, rootPath, onFileClick, onContextMenu, searc
       setIsExpanded(!isExpanded);
     } else {
       // File clicked - open preview
+      console.log('[FileTree] File clicked:', node.name, 'Path:', node.path);
       onFileClick(node.path, node.name);
     }
   };

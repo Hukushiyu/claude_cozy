@@ -126,7 +126,7 @@ export function AppShell() {
                     {assistantName.toUpperCase()}
                   </div>
                   <div className="text-xs mt-1" style={{ color: 'var(--theme-textSecondary)' }}>
-                    v0.6.0
+                    v0.6.1
                   </div>
                 </div>
               </div>

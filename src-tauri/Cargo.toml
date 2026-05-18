@@ -1,6 +1,6 @@
 [package]
 name = "claude-terminal"
-version = "0.6.0"
+version = "0.6.1"
 description = "Desktop GUI wrapper for Claude CLI"
 authors = ["Claude Terminal"]
 license = "MIT"

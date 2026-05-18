@@ -1,6 +1,6 @@
 {
   "name": "claude-terminal",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "Desktop GUI wrapper for Claude CLI - Tauri Edition",
   "type": "module",
   "scripts": {

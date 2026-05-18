@@ -447,6 +447,7 @@ dependencies = [
 name = "claude-terminal"
 version = "0.6.1"
 dependencies = [
+ "base64 0.22.1",
  "chrono",
  "ignore",
  "lazy_static",

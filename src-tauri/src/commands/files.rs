@@ -17,6 +17,14 @@ pub fn read_file(file_path: String) -> Result<String, String> {
 }
 
 #[tauri::command]
+pub fn read_file_base64(file_path: String) -> Result<String, String> {
+    use base64::{Engine as _, engine::general_purpose};
+
+    let bytes = fs::read(&file_path).map_err(|e| e.to_string())?;
+    Ok(general_purpose::STANDARD.encode(&bytes))
+}
+
+#[tauri::command]
 pub fn write_file(file_path: String, content: String) -> Result<(), String> {
     fs::write(&file_path, content).map_err(|e| e.to_string())
 }

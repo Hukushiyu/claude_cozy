@@ -42,9 +42,14 @@ export function FilePreviewModal({ isOpen, onClose, filePath, fileName }: FilePr
         const isTextFile = textExtensions.includes(extension);
         const isImageFile = imageExtensions.includes(extension);
 
-        // Image preview not supported in Tauri version yet
+        // Handle image files
         if (isImageFile) {
-          setError(`Image preview not yet supported in Tauri version. File: ${extension}`);
+          console.log('[FilePreview] Loading image as base64...');
+          const base64 = await tauriAPI.readFileAsBase64(filePath);
+          const mimeType = extension === 'svg' ? 'image/svg+xml' : `image/${extension}`;
+          const dataUrl = `data:${mimeType};base64,${base64}`;
+          console.log('[FilePreview] Image data URL created, length:', dataUrl.length);
+          setImageData(dataUrl);
           return;
         }
 

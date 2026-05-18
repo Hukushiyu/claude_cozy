@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useProjectStore } from '../../stores/projectStore';
-import { FileNode, GitStatus } from '../../types/ipc';
+import { useDragStore } from '../../stores/dragStore';
+import { FileNode } from '../../types/ipc';
 import { FilePreviewModal } from './FilePreviewModal';
 import { ContextMenu } from './ContextMenu';
 import path from 'path-browserify';
@@ -10,7 +11,7 @@ export function FileTree() {
   const { fileTree, projectPath, loadFileTree, isLoadingTree } = useProjectStore();
   const [previewFile, setPreviewFile] = useState<{ path: string; name: string } | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [gitStatus, setGitStatus] = useState<GitStatus>({});
+  const { setDraggedFile } = useDragStore();
   const [contextMenu, setContextMenu] = useState<{
     x: number;
     y: number;
@@ -20,20 +21,8 @@ export function FileTree() {
   useEffect(() => {
     if (projectPath) {
       loadFileTree();
-      loadGitStatus();
     }
   }, [projectPath, loadFileTree]);
-
-  const loadGitStatus = async () => {
-    if (!projectPath) return;
-    try {
-      const status = await tauriAPI.getGitStatus(projectPath);
-      setGitStatus(status);
-    } catch (error) {
-      console.error('Failed to load git status:', error);
-      setGitStatus({});
-    }
-  };
 
   const handleContextMenu = (e: React.MouseEvent, node: FileNode) => {
     e.preventDefault();
@@ -58,7 +47,6 @@ export function FileTree() {
 
       await tauriAPI.createFile(newFilePath);
       await loadFileTree();
-      await loadGitStatus();
     } catch (error) {
       alert(`Failed to create file: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
@@ -98,12 +86,16 @@ export function FileTree() {
 
       await tauriAPI.renameFile(contextMenu.node.path, newPath);
       await loadFileTree();
-      await loadGitStatus();
     } catch (error) {
       alert(`Failed to rename: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setContextMenu(null);
     }
+  };
+
+  const handleInsertReference = (reference: string) => {
+    console.log('[FileTree] Insert reference requested:', reference);
+    setDraggedFile(reference);
   };
 
   const handleDelete = async () => {
@@ -117,7 +109,6 @@ export function FileTree() {
     try {
       await tauriAPI.deleteFile(contextMenu.node.path);
       await loadFileTree();
-      await loadGitStatus();
     } catch (error) {
       alert(`Failed to delete: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
@@ -182,8 +173,8 @@ export function FileTree() {
             rootPath={projectPath}
             onFileClick={(path, name) => setPreviewFile({ path, name })}
             onContextMenu={handleContextMenu}
+            onInsertReference={handleInsertReference}
             searchQuery={searchQuery}
-            gitStatus={gitStatus}
           />
         ))}
       </div>
@@ -217,14 +208,15 @@ interface FileTreeNodeProps {
   rootPath: string;
   onFileClick: (path: string, name: string) => void;
   onContextMenu: (e: React.MouseEvent, node: FileNode) => void;
+  onInsertReference?: (reference: string) => void;
   searchQuery: string;
-  gitStatus: GitStatus;
 }
 
-function FileTreeNode({ node, level, rootPath, onFileClick, onContextMenu, searchQuery, gitStatus }: FileTreeNodeProps) {
+function FileTreeNode({ node, level, rootPath, onFileClick, onContextMenu, onInsertReference, searchQuery }: FileTreeNodeProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [children, setChildren] = useState<FileNode[]>(node.children || []);
   const [isLoading, setIsLoading] = useState(false);
+  const [isHovering, setIsHovering] = useState(false);
 
   // Check if this node or any descendant matches the search
   const matchesSearch = (n: FileNode, query: string): boolean => {
@@ -284,35 +276,6 @@ function FileTreeNode({ node, level, rootPath, onFileClick, onContextMenu, searc
 
   const paddingLeft = level * 16;
 
-  // Normalize path for git status lookup
-  const normalizedPath = node.path.replace(/\\/g, '/');
-  const fileStatus = gitStatus[normalizedPath];
-
-  // Get status indicator
-  const getStatusIndicator = () => {
-    if (!fileStatus) return null;
-
-    const indicators = {
-      modified: { symbol: 'M', color: 'text-orange-600', title: 'Modified' },
-      added: { symbol: 'A', color: 'text-green-600', title: 'Added' },
-      deleted: { symbol: 'D', color: 'text-red-600', title: 'Deleted' },
-      untracked: { symbol: 'U', color: 'text-blue-600', title: 'Untracked' },
-      renamed: { symbol: 'R', color: 'text-purple-600', title: 'Renamed' }
-    };
-
-    const indicator = indicators[fileStatus];
-    if (!indicator) return null;
-
-    return (
-      <span
-        className={`${indicator.color} font-semibold text-xs`}
-        title={indicator.title}
-      >
-        {indicator.symbol}
-      </span>
-    );
-  };
-
   // Highlight matching text
   const highlightText = (text: string, query: string) => {
     if (!query) return text;
@@ -331,24 +294,24 @@ function FileTreeNode({ node, level, rootPath, onFileClick, onContextMenu, searc
     );
   };
 
-  const handleDragStart = (e: React.DragEvent) => {
-    if (node.type === 'file') {
-      // Get relative path from root
+  const handleInsertClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (node.type === 'file' && onInsertReference) {
       const relativePath = node.path.replace(rootPath, '').replace(/\\/g, '/').replace(/^\//, '');
-      e.dataTransfer.setData('text/plain', `@${relativePath}`);
-      e.dataTransfer.effectAllowed = 'copy';
+      console.log('[FileTree] Insert button clicked:', `@${relativePath}`);
+      onInsertReference(`@${relativePath}`);
     }
   };
 
   return (
     <div>
       <div
-        className="flex items-center gap-1 px-2 py-1 hover:bg-gray-200 cursor-pointer rounded text-sm"
+        className="flex items-center gap-1 px-2 py-1 hover:bg-gray-200 cursor-pointer rounded text-sm relative"
         onClick={handleClick}
         onContextMenu={(e) => onContextMenu(e, node)}
+        onMouseEnter={() => setIsHovering(true)}
+        onMouseLeave={() => setIsHovering(false)}
         style={{ paddingLeft: `${paddingLeft + 8}px` }}
-        draggable={node.type === 'file'}
-        onDragStart={handleDragStart}
       >
         {node.type === 'directory' ? (
           <>
@@ -362,7 +325,15 @@ function FileTreeNode({ node, level, rootPath, onFileClick, onContextMenu, searc
           </>
         )}
         <span className="ml-1 flex-1">{highlightText(node.name, searchQuery)}</span>
-        {getStatusIndicator()}
+        {node.type === 'file' && isHovering && (
+          <button
+            onClick={handleInsertClick}
+            className="ml-1 px-1.5 py-0.5 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+            title="Insert @ reference into chat"
+          >
+            @
+          </button>
+        )}
       </div>
 
       {isExpanded && children.length > 0 && (
@@ -375,8 +346,8 @@ function FileTreeNode({ node, level, rootPath, onFileClick, onContextMenu, searc
               rootPath={rootPath}
               onFileClick={onFileClick}
               onContextMenu={onContextMenu}
+              onInsertReference={onInsertReference}
               searchQuery={searchQuery}
-              gitStatus={gitStatus}
             />
           ))}
         </div>

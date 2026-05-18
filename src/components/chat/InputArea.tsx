@@ -1,4 +1,5 @@
 import { useState, KeyboardEvent, useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
+import { useDragStore } from '../../stores/dragStore';
 
 interface InputAreaProps {
   onSend: (message: string) => void;
@@ -13,6 +14,7 @@ export const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(({ onSend, 
   const [input, setInput] = useState('');
   const [isDragOver, setIsDragOver] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const { draggedFile } = useDragStore();
 
   // Expose focus method to parent via ref
   useImperativeHandle(ref, () => ({
@@ -41,11 +43,22 @@ export const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(({ onSend, 
   };
 
   const handleDrop = (e: React.DragEvent<HTMLTextAreaElement>) => {
+    console.log('[InputArea] Drop event triggered');
     e.preventDefault();
     setIsDragOver(false);
 
-    const fileReference = e.dataTransfer.getData('text/plain');
+    // Try to get data from HTML5 drag API first
+    let fileReference = e.dataTransfer.getData('text/plain');
+    console.log('[InputArea] Dropped data from dataTransfer:', fileReference);
+
+    // Fallback to global store if HTML5 API didn't work (Tauri issue)
+    if (!fileReference && draggedFile) {
+      fileReference = draggedFile;
+      console.log('[InputArea] Using fallback from dragStore:', fileReference);
+    }
+
     if (fileReference && fileReference.startsWith('@')) {
+      console.log('[InputArea] Valid file reference, inserting...');
       // Insert at cursor position or append
       const textarea = textareaRef.current;
       if (textarea) {
@@ -66,10 +79,13 @@ export const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(({ onSend, 
           textarea.focus();
         }, 0);
       }
+    } else {
+      console.log('[InputArea] Invalid or empty file reference');
     }
   };
 
   const handleDragOver = (e: React.DragEvent<HTMLTextAreaElement>) => {
+    console.log('[InputArea] Drag over detected');
     e.preventDefault();
     setIsDragOver(true);
   };
@@ -90,6 +106,32 @@ export const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(({ onSend, 
       textareaRef.current.focus();
     }
   }, [disabled]);
+
+  // Watch for file references from the drag store
+  useEffect(() => {
+    if (draggedFile && draggedFile.startsWith('@')) {
+      console.log('[InputArea] File reference received from store:', draggedFile);
+      const textarea = textareaRef.current;
+      if (textarea) {
+        const cursorPos = textarea.selectionStart;
+        const textBefore = input.substring(0, cursorPos);
+        const textAfter = input.substring(cursorPos);
+
+        // Add space before if needed
+        const needsSpaceBefore = textBefore.length > 0 && !textBefore.endsWith(' ');
+        const prefix = needsSpaceBefore ? ' ' : '';
+
+        setInput(textBefore + prefix + draggedFile + ' ' + textAfter);
+
+        // Set cursor after inserted text
+        setTimeout(() => {
+          const newCursorPos = cursorPos + prefix.length + draggedFile.length + 1;
+          textarea.setSelectionRange(newCursorPos, newCursorPos);
+          textarea.focus();
+        }, 0);
+      }
+    }
+  }, [draggedFile]);
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {

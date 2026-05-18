@@ -28,6 +28,7 @@ pub fn run() {
     .invoke_handler(tauri::generate_handler![
       commands::project::select_project,
       commands::files::read_file,
+      commands::files::read_file_base64,
       commands::files::write_file,
       commands::files::load_file_tree,
       commands::files::create_file,

@@ -72,22 +72,26 @@ All features from Electron v0.5.2 have been successfully migrated:
 6. **Output suppression** - Failed attempts properly hidden from user
 7. **Temporary vs persistent approval** - Modal = session only, button = persists across reloads
 
-### ✅ Other Features (Already Working)
+### ✅ Other Features (Already Working - v0.6.1)
 8. Project selection with folder picker
 9. File tree with lazy loading and .gitignore support
-10. File preview with syntax highlighting
+10. File preview with syntax highlighting (text files + images)
 11. Conversation history (save/load/archive)
-12. Git status indicators
-13. Theme system (6 themes)
-14. Model selector (Sonnet 4.6, Opus 4.7, Haiku 4.5)
-15. CLI authentication checks
-16. Terminal launcher for auth
-17. Drag & drop file references
+12. Theme system (6 themes)
+13. Model selector (Sonnet 4.6, Opus 4.7, Haiku 4.5)
+14. CLI authentication checks
+15. Terminal launcher for auth
+16. **@ File references** - Click @ button on file hover to insert reference into chat
 
-### 🎨 UI Polish Phase (Next - May 16, 2026)
-1. **Fixed search bar** - File search stays visible when scrolling file tree
-2. **Permission card truncation** - Tool approval cards don't overflow window
-3. **Window constraints** - Better controls to prevent app expanding beyond screen
+### 🔮 Future Enhancements
+1. **HTML5 Drag & Drop** - Enable native drag-drop for file references
+   - Current limitation: Tauri intercepts drag events for external file drops
+   - Potential solution: Set `dragDropEnabled: false` in tauri.conf.json
+   - Trade-off: Would disable dropping external files into app
+   - Status: Button implementation works well, drag-drop is optional enhancement
+2. **Git Integration** - Restore Git status indicators and actions
+3. **Session Browser UI** - Browse and restore past CLI sessions (backend complete)
+4. **CLI Flags Modal** - GUI interface for advanced CLI options (--fork-session, --effort, --system-prompt, etc.)
 
 ## Development Setup
 

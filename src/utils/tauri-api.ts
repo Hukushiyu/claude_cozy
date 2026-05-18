@@ -204,9 +204,9 @@ export const tauriAPI = {
     });
   },
 
-  // Placeholder methods for compatibility
-  readFileAsBase64: async (_filePath: string): Promise<string> => {
-    throw new Error('Not implemented in Tauri version');
+  // Base64 file reading for images
+  readFileAsBase64: async (filePath: string): Promise<string> => {
+    return await invoke<string>('read_file_base64', { filePath });
   },
 
   getFileStats: async (_filePath: string): Promise<{ size: number; extension: string }> => {

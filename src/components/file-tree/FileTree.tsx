@@ -275,8 +275,10 @@ function FileTreeNode({ node, level, rootPath, onFileClick, onContextMenu, searc
       setIsExpanded(!isExpanded);
     } else {
       // File clicked - open preview
-      console.log('[FileTree] File clicked:', node.name, 'Path:', node.path);
-      onFileClick(node.path, node.name);
+      // Construct absolute path from root + relative path
+      const absolutePath = path.join(rootPath, node.path);
+      console.log('[FileTree] File clicked:', node.name, 'Relative:', node.path, 'Absolute:', absolutePath);
+      onFileClick(absolutePath, node.name);
     }
   };
 

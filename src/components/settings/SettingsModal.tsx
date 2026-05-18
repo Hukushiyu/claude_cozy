@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useSettingsStore, themes } from '../../stores/settingsStore';
+import { UpdateChecker } from './UpdateChecker';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -172,6 +173,11 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 </button>
               ))}
             </div>
+          </div>
+
+          {/* Updates Section */}
+          <div className="mb-6 pt-6 border-t" style={{ borderColor: 'var(--theme-border)' }}>
+            <UpdateChecker />
           </div>
         </div>
 

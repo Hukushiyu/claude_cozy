@@ -1,6 +1,6 @@
 {
   "name": "claude-terminal",
-  "version": "0.6.2",
+  "version": "0.6.3",
   "description": "Desktop GUI wrapper for Claude CLI - Tauri Edition",
   "type": "module",
   "scripts": {
@@ -27,7 +27,9 @@
     "@tauri-apps/api": "^2.1.0",
     "@tauri-apps/plugin-dialog": "^2.0.0",
     "@tauri-apps/plugin-fs": "^2.0.0",
+    "@tauri-apps/plugin-process": "^2.3.1",
     "@tauri-apps/plugin-shell": "^2.0.0",
+    "@tauri-apps/plugin-updater": "^2.10.1",
     "dompurify": "^3.4.2",
     "highlight.js": "^11.11.1",
     "marked": "^18.0.3",

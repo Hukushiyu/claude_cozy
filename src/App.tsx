@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { AppShell } from './components/layout/AppShell';
+import { checkForUpdatesOnLaunch } from './utils/updater';
 import './styles/globals.css';
 
 function App() {
@@ -16,6 +17,11 @@ function App() {
         }, 300);
       }, 100);
     }
+
+    // Check for updates on launch (after a short delay)
+    setTimeout(() => {
+      checkForUpdatesOnLaunch();
+    }, 2000);
   }, []);
 
   return <AppShell />;

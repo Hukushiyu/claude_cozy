@@ -70,6 +70,11 @@ export function ToolCard({ tool }: ToolCardProps) {
 
   // Format input for display
   const formatInput = () => {
+    // Check if input is empty
+    if (Object.keys(tool.input).length === 0) {
+      return `Executing ${tool.toolName}...`;
+    }
+
     if (tool.toolName === 'Read' || tool.toolName === 'Write' || tool.toolName === 'Edit') {
       return tool.input.file_path || JSON.stringify(tool.input);
     }
@@ -154,12 +159,14 @@ export function ToolCard({ tool }: ToolCardProps) {
       {isExpanded && (
         <div className="border-t border-gray-300 bg-white">
           {/* Input Details */}
-          <div className="p-4 border-b border-gray-200">
-            <div className="text-xs font-semibold text-gray-600 mb-2">Input</div>
-            <pre className="text-xs bg-gray-50 p-3 rounded border border-gray-200 overflow-x-auto">
-              {JSON.stringify(tool.input, null, 2)}
-            </pre>
-          </div>
+          {Object.keys(tool.input).length > 0 && (
+            <div className="p-4 border-b border-gray-200">
+              <div className="text-xs font-semibold text-gray-600 mb-2">Input</div>
+              <pre className="text-xs bg-gray-50 p-3 rounded border border-gray-200 overflow-x-auto">
+                {JSON.stringify(tool.input, null, 2)}
+              </pre>
+            </div>
+          )}
 
           {/* Output/Error */}
           {(tool.output || tool.error) && (

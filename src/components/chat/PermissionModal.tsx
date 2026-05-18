@@ -12,6 +12,43 @@ interface PermissionModalProps {
 export function PermissionModal({ isOpen, toolName, description, onApprove, onDeny }: PermissionModalProps) {
   const { assistantName } = useSettingsStore();
 
+  // Parse tool input to create a simplified summary
+  const getToolSummary = () => {
+    try {
+      const input = JSON.parse(description);
+
+      switch (toolName) {
+        case 'Write':
+        case 'Edit':
+          if (input.file_path || input.filePath) {
+            const path = input.file_path || input.filePath;
+            const contentLength = (input.content || '').length;
+            return `File: ${path}\nContent length: ${contentLength} characters`;
+          }
+          break;
+        case 'Read':
+          if (input.file_path || input.filePath) {
+            return `File: ${input.file_path || input.filePath}`;
+          }
+          break;
+        case 'Bash':
+          if (input.command) {
+            return `Command: ${input.command}`;
+          }
+          break;
+        default:
+          // For other tools, show first 200 chars of JSON
+          return description.length > 200 ? description.substring(0, 200) + '...' : description;
+      }
+    } catch {
+      // If parsing fails, truncate raw description
+      return description.length > 200 ? description.substring(0, 200) + '...' : description;
+    }
+    return description;
+  };
+
+  const summary = getToolSummary();
+
   // Prevent body scroll when modal is open
   useEffect(() => {
     if (isOpen) {
@@ -79,9 +116,9 @@ export function PermissionModal({ isOpen, toolName, description, onApprove, onDe
           </div>
 
           <div>
-            <div className="text-sm text-gray-600 font-medium mb-2">Input:</div>
+            <div className="text-sm text-gray-600 font-medium mb-2">Details:</div>
             <div className="bg-gray-100 px-3 py-2 rounded font-mono text-xs text-gray-900 max-h-48 overflow-y-auto break-all">
-              <pre className="whitespace-pre-wrap">{description}</pre>
+              <pre className="whitespace-pre-wrap">{summary}</pre>
             </div>
           </div>
         </div>

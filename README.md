@@ -8,6 +8,53 @@ A beautiful, lightweight desktop GUI wrapper for the Claude CLI. Built with Taur
 
 ---
 
+## 💡 Why Choose Claude Terminal?
+
+**Claude Terminal is perfect for users who want Claude's full power without the complexity.**
+
+While Anthropic's official Claude Code Desktop is packed with advanced features for power users (multi-session management, MCP servers, computer use, SSH sessions, etc.), **Claude Terminal focuses on what most people actually need**: a clean, fast way to chat with Claude and work with their files.
+
+### 🎯 Who Is This For?
+
+- **Beginners** who find the official app overwhelming with too many options
+- **Casual users** who just want to chat with Claude and edit files
+- **Anyone** who prefers a simple, focused workspace over complex IDE features
+- **Users** who value speed and lightweight apps (90% smaller!)
+- **Those** who want beautiful custom themes and a personalized experience
+
+### ⚖️ Claude Terminal vs. Claude Code Desktop
+
+| What You Get | Claude Terminal | Claude Code Desktop |
+|--------------|-----------------|---------------------|
+| **Chat with Claude** | ✅ | ✅ |
+| **Read/Write/Edit Files** | ✅ Full access | ✅ Full access |
+| **File Tree & Preview** | ✅ Simple & clean | ✅ With file editor |
+| **Beautiful Themes** | ✅ 6 custom themes | ⚠️ Limited |
+| **App Size** | ✅ **10-15MB** | ❌ 120-150MB |
+| **Memory Usage** | ✅ **Low** | ❌ Higher |
+| **Learning Curve** | ✅ **Minutes** | ⚠️ Steeper |
+| **Interface** | ✅ **Simple & focused** | ⚠️ Complex |
+| **Open Source** | ✅ **MIT License** | ❌ Proprietary |
+| | | |
+| **Advanced Features** | | |
+| Multiple Parallel Sessions | ❌ | ✅ |
+| Built-in Terminal | ❌ | ✅ |
+| Computer Use (Screen Control) | ❌ | ✅ |
+| MCP Servers & Plugins | ❌ | ✅ |
+| Remote/SSH Sessions | ❌ | ✅ |
+| PR Monitoring & Auto-fix | ❌ | ✅ |
+
+### 🚀 The Bottom Line
+
+**Both apps can do the essential work** - read files, write code, edit your projects. The difference is in complexity and size.
+
+- **Choose Claude Terminal** if you want a lightweight, beautiful app that does the core tasks exceptionally well
+- **Choose Claude Code Desktop** if you need advanced features like multi-session management, remote execution, or computer control
+
+**Think of it like this:** Claude Code Desktop is a professional IDE suite. Claude Terminal is a focused, elegant text editor. Both are powerful - it just depends on what you need.
+
+---
+
 ## ✨ Features
 
 ### 🎨 Beautiful Interface

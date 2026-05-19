@@ -47,8 +47,7 @@ jobs:
             src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/*.exe
             src-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi/*.msi
 
-  # Mac ARM Build (M1/M2/M3)
-  # Intel Mac build commented out - ARM users can use this, Intel users will use Rosetta 2
+  # Mac ARM Build (M1/M2/M3) with Code Signing
   build-mac-arm:
     runs-on: macos-14  # ARM Mac (M1)
 
@@ -69,18 +68,79 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Build Mac ARM app
+      - name: Import code signing certificate
+        if: github.event_name != 'pull_request'
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+        run: |
+          # Create variables
+          CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
+          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+          KEYCHAIN_PASSWORD=$(openssl rand -base64 32)
+
+          # Decode certificate from base64 and save to file
+          echo -n "$APPLE_CERTIFICATE" | base64 --decode -o $CERTIFICATE_PATH
+
+          # Create temporary keychain
+          security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+
+          # Import certificate to keychain
+          security import $CERTIFICATE_PATH \
+            -P "$APPLE_CERTIFICATE_PASSWORD" \
+            -A \
+            -t cert \
+            -f pkcs12 \
+            -k $KEYCHAIN_PATH
+
+          # Allow codesign to access the certificate
+          security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+
+          # Add keychain to search list
+          security list-keychain -d user -s $KEYCHAIN_PATH
+
+          # Verify certificate is available
+          echo "Available signing identities:"
+          security find-identity -v -p codesigning $KEYCHAIN_PATH
+
+      - name: Build Mac ARM app (signed)
+        if: github.event_name != 'pull_request'
+        env:
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+        run: |
+          # Set signing identity for Tauri
+          export TAURI_SIGNING_PRIVATE_KEY=""
+          export TAURI_SIGNING_PRIVATE_KEY_PASSWORD=""
+          npm run tauri:build:mac:arm64
+
+      - name: Build Mac ARM app (unsigned - PR only)
+        if: github.event_name == 'pull_request'
         run: npm run tauri:build:mac:arm64
 
-      - name: Create zip from .app bundle
+      - name: Create DMG and ZIP
         run: |
           cd src-tauri/target/aarch64-apple-darwin/release/bundle/macos
-          zip -ry "../Claude Terminal_0.6.2_aarch64.zip" "Claude Terminal.app"
-          echo "=== Zip created, listing parent directory ==="
+
+          # Create ZIP
+          zip -ry "../Claude Terminal_0.6.3_aarch64.zip" "Claude Terminal.app"
+
+          # Note: DMG creation happens automatically by Tauri if configured in tauri.conf.json
+
+          echo "=== Build outputs ==="
           ls -la ../
 
-      - name: Upload Mac ARM artifact
+      - name: Clean up keychain
+        if: always() && github.event_name != 'pull_request'
+        run: |
+          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+          security delete-keychain $KEYCHAIN_PATH || true
+
+      - name: Upload Mac ARM artifacts
         uses: actions/upload-artifact@v4
         with:
           name: claude-terminal-mac-arm
-          path: src-tauri/target/aarch64-apple-darwin/release/bundle/*.zip
+          path: |
+            src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/*.dmg
+            src-tauri/target/aarch64-apple-darwin/release/bundle/*.zip

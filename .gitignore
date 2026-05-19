@@ -34,6 +34,12 @@ npm-debug.log*
 remove-docs.bat
 remove-docs.sh
 
+# Certificate files (NEVER commit these!)
+*.p12
+*.cer
+*.pem
+certificate-base64.txt
+
 # Documentation (local only - not in repo)
 BUILD_INSTRUCTIONS_v0.6.0.md
 BUILD_PACKAGE_README.md

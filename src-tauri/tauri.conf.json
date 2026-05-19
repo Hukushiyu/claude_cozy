@@ -56,7 +56,8 @@
       "minimumSystemVersion": "10.13",
       "exceptionDomain": "",
       "signingIdentity": null,
-      "entitlements": null
+      "entitlements": null,
+      "hardenedRuntime": true
     }
   },
   "plugins": {}

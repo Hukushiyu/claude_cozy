@@ -1,4 +1,4 @@
-# Claude Terminal - Tauri Edition
+# Claude Cozy - Tauri Edition
 
 A desktop GUI wrapper for Claude CLI built with Tauri + Rust backend for improved performance and smaller bundle sizes.
 
@@ -59,7 +59,7 @@ A desktop GUI wrapper for Claude CLI built with Tauri + Rust backend for improve
   - `Cargo.toml` - Rust dependencies
   - `tauri.conf.json` - Tauri configuration
 
-## Current Features (v0.6.3 - Released May 18, 2026)
+## Current Features (v0.6.4 - Released May 19, 2026)
 
 All features from Electron v0.5.2 have been successfully migrated plus new enhancements:
 

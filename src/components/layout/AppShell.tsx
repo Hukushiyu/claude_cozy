@@ -118,7 +118,7 @@ export function AppShell() {
               <div className="p-6 flex flex-col items-center border-b flex-shrink-0 app-drag-region" style={{ borderColor: 'var(--theme-border)' }}>
                 <img
                   src={iconImage}
-                  alt="Claude Terminal"
+                  alt="Claude Cozy"
                   className="w-16 h-16 mb-3"
                 />
                 <div className="text-center">
@@ -126,7 +126,7 @@ export function AppShell() {
                     {assistantName.toUpperCase()}
                   </div>
                   <div className="text-xs mt-1" style={{ color: 'var(--theme-textSecondary)' }}>
-                    v0.6.3
+                    v0.6.4
                   </div>
                 </div>
               </div>

@@ -1,8 +1,8 @@
 [package]
-name = "claude-terminal"
-version = "0.6.3"
+name = "claude-cozy"
+version = "0.6.4"
 description = "Desktop GUI wrapper for Claude CLI"
-authors = ["Claude Terminal"]
+authors = ["Claude Cozy"]
 license = "MIT"
 repository = ""
 edition = "2021"

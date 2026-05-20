@@ -16,7 +16,7 @@ This guide walks you through setting up automated Mac code signing in GitHub Act
 **On Windows (PowerShell):**
 
 ```powershell
-cd "C:\Users\joshua.gates\Dev Projects\Claude Terminal Project\claude-desktop-app\Tauri Builds"
+cd "C:\Users\joshua.gates\Dev Projects\Claude Cozy Project\claude-desktop-app\Tauri Builds"
 
 # Run the conversion script
 .\scripts\encode-cert.ps1 -CertPath "C:\path\to\your\certificate.p12"
@@ -89,7 +89,7 @@ security find-identity -v -p codesigning
 ### Option A: Automatic (Push to GitHub)
 
 ```bash
-cd "C:\Users\joshua.gates\Dev Projects\Claude Terminal Project\claude-desktop-app\Tauri Builds"
+cd "C:\Users\joshua.gates\Dev Projects\Claude Cozy Project\claude-desktop-app\Tauri Builds"
 
 # Commit the updated workflow
 git add .github/workflows/build.yml src-tauri/tauri.conf.json scripts/encode-cert.ps1 GITHUB_SIGNING_SETUP.md
@@ -102,7 +102,7 @@ git push origin master
 ### Option B: Manual Trigger
 
 1. Go to: `https://github.com/Hukushiyu/claude_terminal/actions`
-2. Click "Build Claude Terminal" workflow
+2. Click "Build Claude Cozy" workflow
 3. Click "Run workflow" → "Run workflow"
 4. Watch the build progress
 
@@ -119,13 +119,13 @@ After the build completes:
    unzip claude-terminal-mac-arm.zip
    
    # Check signature
-   codesign -dv --verbose=4 "Claude Terminal.app"
+   codesign -dv --verbose=4 "Claude Cozy.app"
    
    # Verify it's valid
-   codesign --verify --deep --strict --verbose=2 "Claude Terminal.app"
+   codesign --verify --deep --strict --verbose=2 "Claude Cozy.app"
    
    # Check Gatekeeper acceptance
-   spctl -a -t exec -vv "Claude Terminal.app"
+   spctl -a -t exec -vv "Claude Cozy.app"
    ```
 
 3. **Expected output:**

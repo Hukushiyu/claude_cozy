@@ -67,7 +67,7 @@ export function ProjectSelectionModal({ onSelectProject }: ProjectSelectionModal
         <div className="text-center mb-6">
           <div className="text-5xl mb-4">👋</div>
           <h1 className="text-2xl font-semibold text-gray-800 mb-2">
-            Welcome to Claude Terminal
+            Welcome to Claude Cozy
           </h1>
           <p className="text-gray-600 text-sm">
             A visual, friendly workspace for Claude CLI

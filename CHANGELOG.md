@@ -1,6 +1,23 @@
 # Changelog
 
-All notable changes to Claude Terminal will be documented in this file.
+All notable changes to Claude Cozy will be documented in this file.
+
+## [0.6.4] - 2026-05-19
+
+### Changed
+- **Rebranded** - "Claude Terminal" renamed to "Claude Cozy" throughout the app
+- **Mac Code Signing** - GitHub Actions now signs Mac builds with Developer ID certificate
+- **DMG Support** - Added DMG build target for Mac (alongside ZIP)
+
+### Added
+- PowerShell script to encode certificates for GitHub Secrets
+- Comprehensive signing setup guide (GITHUB_SIGNING_SETUP.md)
+- Hardened runtime enabled for better macOS Gatekeeper compatibility
+
+### Technical
+- Updated bundle identifier to `com.claudecozy`
+- GitHub Actions workflow with automated certificate import and signing
+- Temporary keychain security for CI builds
 
 ## [0.6.3] - 2026-05-18
 

@@ -71,7 +71,7 @@ export function UpdateChecker() {
       <div>
         <h3 className="text-sm font-medium text-gray-700 mb-2">Software Updates</h3>
         <p className="text-xs text-gray-500 mb-3">
-          Check for new versions of Claude Terminal
+          Check for new versions of Claude Cozy
         </p>
       </div>
 

@@ -1,4 +1,4 @@
-# Claude Terminal
+# Claude Cozy
 
 A beautiful, lightweight desktop GUI wrapper for the Claude CLI. Built with Tauri for blazing-fast performance and tiny bundle sizes.
 
@@ -8,11 +8,11 @@ A beautiful, lightweight desktop GUI wrapper for the Claude CLI. Built with Taur
 
 ---
 
-## 💡 Why Choose Claude Terminal?
+## 💡 Why Choose Claude Cozy?
 
-**Claude Terminal is perfect for users who want Claude's full power without the complexity.**
+**Claude Cozy is perfect for users who want Claude's full power without the complexity.**
 
-While Anthropic's official Claude Code Desktop is packed with advanced features for power users (multi-session management, MCP servers, computer use, SSH sessions, etc.), **Claude Terminal focuses on what most people actually need**: a clean, fast way to chat with Claude and work with their files.
+While Anthropic's official Claude Code Desktop is packed with advanced features for power users (multi-session management, MCP servers, computer use, SSH sessions, etc.), **Claude Cozy focuses on what most people actually need**: a clean, fast way to chat with Claude and work with their files.
 
 ### 🎯 Who Is This For?
 
@@ -22,9 +22,9 @@ While Anthropic's official Claude Code Desktop is packed with advanced features 
 - **Users** who value speed and lightweight apps (90% smaller!)
 - **Those** who want beautiful custom themes and a personalized experience
 
-### ⚖️ Claude Terminal vs. Claude Code Desktop
+### ⚖️ Claude Cozy vs. Claude Code Desktop
 
-| What You Get | Claude Terminal | Claude Code Desktop |
+| What You Get | Claude Cozy | Claude Code Desktop |
 |--------------|-----------------|---------------------|
 | **Chat with Claude** | ✅ | ✅ |
 | **Read/Write/Edit Files** | ✅ Full access | ✅ Full access |
@@ -48,10 +48,10 @@ While Anthropic's official Claude Code Desktop is packed with advanced features 
 
 **Both apps can do the essential work** - read files, write code, edit your projects. The difference is in complexity and size.
 
-- **Choose Claude Terminal** if you want a lightweight, beautiful app that does the core tasks exceptionally well
+- **Choose Claude Cozy** if you want a lightweight, beautiful app that does the core tasks exceptionally well
 - **Choose Claude Code Desktop** if you need advanced features like multi-session management, remote execution, or computer control
 
-**Think of it like this:** Claude Code Desktop is a professional IDE suite. Claude Terminal is a focused, elegant text editor. Both are powerful - it just depends on what you need.
+**Think of it like this:** Claude Code Desktop is a professional IDE suite. Claude Cozy is a focused, elegant text editor. Both are powerful - it just depends on what you need.
 
 ---
 
@@ -106,11 +106,11 @@ While Anthropic's official Claude Code Desktop is packed with advanced features 
 #### Windows
 1. Download `Claude-Terminal-0.6.3-setup.exe` from [Releases](https://github.com/Hukushiyu/claude_terminal/releases)
 2. Run the installer
-3. Launch "Claude Terminal" from Start Menu
+3. Launch "Claude Cozy" from Start Menu
 
 #### macOS
 1. Download `Claude-Terminal-0.6.3.dmg` from [Releases](https://github.com/Hukushiyu/claude_terminal/releases)
-2. Open the DMG and drag Claude Terminal to Applications
+2. Open the DMG and drag Claude Cozy to Applications
 3. Right-click the app → Open (first time only, due to unsigned app)
 
 ---
@@ -271,5 +271,5 @@ MIT License - see [LICENSE](LICENSE) file for details
 ---
 
 <div align="center">
-  <sub>Built with ❤️ by the Claude Terminal team</sub>
+  <sub>Built with ❤️ by the Claude Cozy team</sub>
 </div>

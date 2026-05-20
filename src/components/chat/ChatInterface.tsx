@@ -283,7 +283,7 @@ export function ChatInterface() {
         {messages.length === 0 && !streamingMessage && projectPath && (
           <div className="flex items-center justify-center h-full">
             <div className="text-center" style={{ color: 'var(--theme-textSecondary)' }}>
-              <h2 className="text-2xl font-medium mb-2" style={{ color: 'var(--theme-text)' }}>Welcome to Claude Terminal</h2>
+              <h2 className="text-2xl font-medium mb-2" style={{ color: 'var(--theme-text)' }}>Welcome to Claude Cozy</h2>
               <p>Start a conversation by typing a message below</p>
             </div>
           </div>

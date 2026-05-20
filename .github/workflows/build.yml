@@ -119,12 +119,12 @@ jobs:
         if: github.event_name == 'pull_request'
         run: npm run tauri:build:mac:arm64
 
-      - name: Create DMG and ZIP
+      - name: Create ZIP from .app bundle
         run: |
           cd src-tauri/target/aarch64-apple-darwin/release/bundle/macos
 
           # Create ZIP
-          zip -ry "../Claude Terminal_0.6.3_aarch64.zip" "Claude Terminal.app"
+          zip -ry "../Claude Cozy_0.6.4_aarch64.zip" "Claude Cozy.app"
 
           # Note: DMG creation happens automatically by Tauri if configured in tauri.conf.json
 

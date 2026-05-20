@@ -13,7 +13,7 @@ A desktop GUI wrapper for Claude CLI built with Tauri + Rust backend for improve
 - **State Management:** Zustand
 - **CLI Integration:** Claude CLI via Rust process spawning
 
-**Migration Status:** ✅ Chat functionality complete and tested (v0.6.0) - Ready for UI polish phase
+**Current Status:** ✅ Production-ready v0.6.4 - Rebranded, signed Mac builds, DMG support
 
 ## Architecture
 
@@ -79,6 +79,8 @@ All features from Electron v0.5.2 have been successfully migrated plus new enhan
 13. **Model selector** - Sonnet 4.6, Opus 4.7, Haiku 4.5
 14. **CLI authentication** - Auto-check with terminal launcher
 15. **Auto-update system** - Checks GitHub releases on launch + manual check in Settings
+16. **Mac code signing** - Developer ID signed builds, no Gatekeeper warnings (v0.6.4+)
+17. **DMG installer** - Beautiful Mac disk image installer (v0.6.4+)
 
 ### 🔮 Future Enhancements
 1. **HTML5 Drag & Drop** - Enable native drag-drop for file references
@@ -369,6 +371,27 @@ npm run tauri:build:mac:universal
 # Output: src-tauri/target/release/bundle/dmg/ and .app
 ```
 
+### Code Signing (v0.6.4+)
+
+**Mac builds are automatically signed via GitHub Actions:**
+- Uses Apple Developer ID certificate
+- No Gatekeeper warnings for users
+- DMG and ZIP both signed
+- See `GITHUB_SIGNING_SETUP.md` for configuration details
+
+**Windows builds are currently unsigned:**
+- Users may see SmartScreen warning on first run
+- Can be bypassed with "More info" → "Run anyway"
+- Future: Will add Windows code signing certificate
+
+### Automated Builds
+
+All releases are built via GitHub Actions (`.github/workflows/build.yml`):
+- **Windows:** NSIS installer (`.exe`) + MSI installer
+- **Mac:** DMG installer (`.dmg`) + ZIP archive (`.zip`)
+- **Mac signing:** Automatic via GitHub Secrets
+- **Artifacts:** Available for download after each build
+
 ### Bundle Size Comparison
 
 | Platform | Electron | Tauri | Savings |
@@ -560,7 +583,7 @@ For issues:
 
 ---
 
-**Version:** 0.6.0  
-**Status:** Backend complete, frontend migration in progress  
+**Version:** 0.6.4  
+**Status:** Production-ready - Rebranded to Claude Cozy with signed Mac builds  
 **Framework:** Tauri 2.x + Rust  
-**Last Updated:** May 15, 2026
+**Last Updated:** May 19, 2026

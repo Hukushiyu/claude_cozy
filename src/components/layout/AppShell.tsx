@@ -200,7 +200,7 @@ export function AppShell() {
           </button>
 
           <div className="ml-4 font-medium" style={{ color: 'var(--theme-text)' }}>
-            {assistantName} Terminal
+            {assistantName} Cozy
           </div>
 
           {projectPath && !sidebarOpen && (

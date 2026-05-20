@@ -140,7 +140,105 @@ jobs:
       - name: Upload Mac ARM artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: claude-terminal-mac-arm
+          name: claude-cozy-mac-arm
           path: |
             src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/*.dmg
             src-tauri/target/aarch64-apple-darwin/release/bundle/*.zip
+
+  # Mac Intel Build (x64) with Code Signing
+  build-mac-intel:
+    runs-on: macos-13  # Intel Mac (x64)
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-apple-darwin
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Import code signing certificate
+        if: github.event_name != 'pull_request'
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+        run: |
+          # Create variables
+          CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
+          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+          KEYCHAIN_PASSWORD=$(openssl rand -base64 32)
+
+          # Decode certificate from base64 and save to file
+          echo -n "$APPLE_CERTIFICATE" | base64 --decode -o $CERTIFICATE_PATH
+
+          # Create temporary keychain
+          security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+
+          # Import certificate to keychain
+          security import $CERTIFICATE_PATH \
+            -P "$APPLE_CERTIFICATE_PASSWORD" \
+            -A \
+            -t cert \
+            -f pkcs12 \
+            -k $KEYCHAIN_PATH
+
+          # Allow codesign to access the certificate
+          security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+
+          # Add keychain to search list
+          security list-keychain -d user -s $KEYCHAIN_PATH
+
+          # Verify certificate is available
+          echo "Available signing identities:"
+          security find-identity -v -p codesigning $KEYCHAIN_PATH
+
+      - name: Build Mac Intel app (signed)
+        if: github.event_name != 'pull_request'
+        env:
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+        run: |
+          # Set signing identity for Tauri
+          export TAURI_SIGNING_PRIVATE_KEY=""
+          export TAURI_SIGNING_PRIVATE_KEY_PASSWORD=""
+          npm run tauri:build:mac:x64
+
+      - name: Build Mac Intel app (unsigned - PR only)
+        if: github.event_name == 'pull_request'
+        run: npm run tauri:build:mac:x64
+
+      - name: Create ZIP from .app bundle
+        run: |
+          cd src-tauri/target/x86_64-apple-darwin/release/bundle/macos
+
+          # Create ZIP
+          zip -ry "../Claude Cozy_0.6.4_x64.zip" "Claude Cozy.app"
+
+          # Note: DMG creation happens automatically by Tauri if configured in tauri.conf.json
+
+          echo "=== Build outputs ==="
+          ls -la ../
+
+      - name: Clean up keychain
+        if: always() && github.event_name != 'pull_request'
+        run: |
+          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+          security delete-keychain $KEYCHAIN_PATH || true
+
+      - name: Upload Mac Intel artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: claude-cozy-mac-intel
+          path: |
+            src-tauri/target/x86_64-apple-darwin/release/bundle/dmg/*.dmg
+            src-tauri/target/x86_64-apple-darwin/release/bundle/*.zip

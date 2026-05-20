@@ -10,6 +10,8 @@ All notable changes to Claude Cozy will be documented in this file.
 - **DMG Support** - Added DMG build target for Mac (alongside ZIP)
 
 ### Added
+- **Intel Mac builds** - Separate x64 builds for Intel Macs (no Rosetta needed!)
+- **Apple Silicon builds** - Native ARM64 builds for M1/M2/M3/M4 Macs
 - PowerShell script to encode certificates for GitHub Secrets
 - Comprehensive signing setup guide (GITHUB_SIGNING_SETUP.md)
 - Hardened runtime enabled for better macOS Gatekeeper compatibility
@@ -17,6 +19,7 @@ All notable changes to Claude Cozy will be documented in this file.
 ### Technical
 - Updated bundle identifier to `com.claudecozy`
 - GitHub Actions workflow with automated certificate import and signing
+- Dual Mac builds: `macos-13` (Intel) + `macos-14` (ARM)
 - Temporary keychain security for CI builds
 
 ## [0.6.3] - 2026-05-18

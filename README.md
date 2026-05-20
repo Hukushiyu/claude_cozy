@@ -104,14 +104,19 @@ While Anthropic's official Claude Code Desktop is packed with advanced features 
 ### Installation
 
 #### Windows
-1. Download `Claude-Terminal-0.6.3-setup.exe` from [Releases](https://github.com/Hukushiyu/claude_terminal/releases)
+1. Download `Claude.Cozy_0.6.4_x64-setup.exe` from [Releases](https://github.com/Hukushiyu/claude_terminal/releases)
 2. Run the installer
 3. Launch "Claude Cozy" from Start Menu
 
-#### macOS
-1. Download `Claude-Terminal-0.6.3.dmg` from [Releases](https://github.com/Hukushiyu/claude_terminal/releases)
+#### macOS (Apple Silicon - M1/M2/M3/M4)
+1. Download `Claude.Cozy_0.6.4_aarch64.dmg` from [Releases](https://github.com/Hukushiyu/claude_terminal/releases)
 2. Open the DMG and drag Claude Cozy to Applications
-3. Right-click the app → Open (first time only, due to unsigned app)
+3. Launch from Applications - **No Gatekeeper warning!** ✨ (Signed with Developer ID)
+
+#### macOS (Intel)
+1. Download `Claude.Cozy_0.6.4_x64.dmg` from [Releases](https://github.com/Hukushiyu/claude_terminal/releases)
+2. Open the DMG and drag Claude Cozy to Applications
+3. Launch from Applications - **No Gatekeeper warning!** ✨ (Signed with Developer ID)
 
 ---
 

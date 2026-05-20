@@ -1,4 +1,4 @@
-name: Build Claude Terminal
+name: Build Claude Cozy
 
 on:
   # Trigger on push to master branch

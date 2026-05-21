@@ -8,6 +8,16 @@ interface ThinkingIndicatorProps {
 const getThinkingEmoji = (status: string) => {
   const lowerStatus = status.toLowerCase();
 
+  // Tool execution states
+  if (lowerStatus.includes('bash') || lowerStatus.includes('shell') || lowerStatus.includes('command')) return '💻';
+  if (lowerStatus.includes('write') || lowerStatus.includes('creat')) return '✏️';
+  if (lowerStatus.includes('read') || lowerStatus.includes('fetch')) return '📖';
+  if (lowerStatus.includes('edit') || lowerStatus.includes('patch')) return '🔧';
+  if (lowerStatus.includes('search') || lowerStatus.includes('grep') || lowerStatus.includes('glob')) return '🔍';
+  if (lowerStatus.includes('running') || lowerStatus.includes('execut')) return '⚙️';
+  if (lowerStatus.includes('rate limit') || lowerStatus.includes('retry')) return '⏳';
+
+  // Thinking states
   if (lowerStatus.includes('flummox')) return '🤔';
   if (lowerStatus.includes('ponder')) return '💭';
   if (lowerStatus.includes('cogitat')) return '🧠';

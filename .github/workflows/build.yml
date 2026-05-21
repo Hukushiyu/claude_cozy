@@ -164,7 +164,7 @@ jobs:
           cd src-tauri/target/aarch64-apple-darwin/release/bundle/macos
 
           # Create ZIP
-          zip -ry "../Claude Cozy_0.6.4_aarch64.zip" "Claude Cozy.app"
+          zip -ry "../Claude Cozy_0.6.8_aarch64.zip" "Claude Cozy.app"
 
           # Note: DMG creation happens automatically by Tauri if configured in tauri.conf.json
 
@@ -302,7 +302,7 @@ jobs:
           cd src-tauri/target/x86_64-apple-darwin/release/bundle/macos
 
           # Create ZIP
-          zip -ry "../Claude Cozy_0.6.4_x64.zip" "Claude Cozy.app"
+          zip -ry "../Claude Cozy_0.6.8_x64.zip" "Claude Cozy.app"
 
           # Note: DMG creation happens automatically by Tauri if configured in tauri.conf.json
 

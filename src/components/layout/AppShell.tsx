@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { ChatInterface } from '../chat/ChatInterface';
 import { FileTree } from '../file-tree/FileTree';
 import { ApiKeyDialog } from './ApiKeyDialog';
@@ -13,8 +13,19 @@ import { useSettingsStore } from '../../stores/settingsStore';
 import { tauriAPI } from '../../utils/tauri-api';
 import iconImage from '../../assets/icon.png';
 
+const SIDEBAR_MIN = 180;
+const SIDEBAR_MAX = 480;
+const SIDEBAR_DEFAULT = 256;
+
 export function AppShell() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarWidth, setSidebarWidth] = useState(() => {
+    const saved = localStorage.getItem('sidebarWidth');
+    return saved ? parseInt(saved, 10) : SIDEBAR_DEFAULT;
+  });
+  const isDragging = useRef(false);
+  const dragStartX = useRef(0);
+  const dragStartWidth = useRef(0);
   const [showApiKeyDialog, setShowApiKeyDialog] = useState(false);
   const [showProjectModal, setShowProjectModal] = useState(false);
   const [showCommandsModal, setShowCommandsModal] = useState(false);
@@ -93,6 +104,41 @@ export function AppShell() {
   // Detect if running on Mac
   const isMac = typeof window !== 'undefined' && navigator.platform.toLowerCase().includes('mac');
 
+  const handleResizeStart = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    isDragging.current = true;
+    dragStartX.current = e.clientX;
+    dragStartWidth.current = sidebarWidth;
+
+    const onMouseMove = (ev: MouseEvent) => {
+      if (!isDragging.current) return;
+      const delta = ev.clientX - dragStartX.current;
+      const newWidth = Math.min(SIDEBAR_MAX, Math.max(SIDEBAR_MIN, dragStartWidth.current + delta));
+      setSidebarWidth(newWidth);
+    };
+
+    const onMouseUp = (ev: MouseEvent) => {
+      isDragging.current = false;
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      const delta = ev.clientX - dragStartX.current;
+      const finalWidth = Math.min(SIDEBAR_MAX, Math.max(SIDEBAR_MIN, dragStartWidth.current + delta));
+      setSidebarWidth(finalWidth);
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+    };
+
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+  }, [sidebarWidth]);
+
+  // Persist width after drag ends via effect
+  useEffect(() => {
+    localStorage.setItem('sidebarWidth', String(sidebarWidth));
+  }, [sidebarWidth]);
+
   return (
     <>
       {showApiKeyDialog && <ApiKeyDialog onSubmit={handleApiKeySubmit} onUseCli={handleUseCli} />}
@@ -113,7 +159,8 @@ export function AppShell() {
         <div className="flex flex-1 overflow-hidden min-h-0">
           {/* Sidebar */}
           {sidebarOpen && (
-            <div className="w-64 border-r flex flex-col h-full" style={{ backgroundColor: 'var(--theme-sidebarBg)', borderColor: 'var(--theme-border)' }}>
+            <div className="flex flex-row h-full flex-shrink-0" style={{ width: sidebarWidth }}>
+            <div className="flex-1 border-r flex flex-col h-full overflow-hidden" style={{ backgroundColor: 'var(--theme-sidebarBg)', borderColor: 'var(--theme-border)' }}>
               {/* Logo Section */}
               <div className="p-6 flex flex-col items-center border-b flex-shrink-0 app-drag-region" style={{ borderColor: 'var(--theme-border)' }}>
                 <img
@@ -126,7 +173,7 @@ export function AppShell() {
                     {assistantName.toUpperCase()}
                   </div>
                   <div className="text-xs mt-1" style={{ color: 'var(--theme-textSecondary)' }}>
-                    v0.6.4
+                    v0.6.8
                   </div>
                 </div>
               </div>
@@ -177,6 +224,14 @@ export function AppShell() {
               <div className="flex-1 overflow-y-auto min-h-0">
                 <FileTree />
               </div>
+            </div>
+            {/* Drag handle */}
+            <div
+              onMouseDown={handleResizeStart}
+              className="w-1 flex-shrink-0 cursor-col-resize hover:bg-blue-400 active:bg-blue-500 transition-colors"
+              style={{ backgroundColor: 'transparent' }}
+              title="Drag to resize sidebar"
+            />
             </div>
           )}
 

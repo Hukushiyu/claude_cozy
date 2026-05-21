@@ -4,6 +4,102 @@ Guide for building Claude Cozy locally on your Mac when GitHub Actions runners a
 
 ---
 
+## 🔐 Setting Up Your Certificates & Keys (Do This First!)
+
+If you want to sign and notarize your build, you need to import your certificates and keys.
+
+### Step 1: Transfer Files to Your Mac
+
+Copy these files from your other computer to your Mac:
+- `certificate.p12` (your Developer ID certificate)
+- `AuthKey_XXXXXXXXXX.p8` (your App Store Connect API key)
+
+**Transfer methods:**
+- AirDrop
+- USB drive
+- Email to yourself (secure if temporary)
+- Cloud storage (Google Drive, Dropbox, etc.)
+
+### Step 2: Import the .p12 Certificate
+
+**Method 1: Double-click (Easy)**
+1. Double-click `certificate.p12` on your Mac
+2. You'll be prompted for the certificate password
+3. Enter the password you set when exporting the certificate
+4. The certificate will be imported to your **login** keychain
+
+**Method 2: Command line**
+```bash
+# Import certificate to login keychain
+security import certificate.p12 -k ~/Library/Keychains/login.keychain-db
+
+# You'll be prompted for:
+# 1. The certificate password
+# 2. Your Mac login password (to allow the import)
+```
+
+**Verify it imported:**
+```bash
+security find-identity -v -p codesigning
+```
+
+You should see something like:
+```
+1) ABC123... "Developer ID Application: Your Name (TEAM123)"
+```
+
+Copy the full identity name in quotes - you'll need it for signing!
+
+### Step 3: Save Your API Key Details
+
+The `.p8` file stays as a file - you don't "import" it like the certificate.
+
+**Extract the details you need:**
+
+1. **Key ID** - Found in the filename:
+   ```
+   AuthKey_ABC123DEFG.p8
+            ^^^^^^^^^^
+            This is your Key ID
+   ```
+
+2. **Issuer ID** - Get from App Store Connect:
+   - Go to: https://appstoreconnect.apple.com/access/api
+   - Click "Keys" tab
+   - Look at the top for "Issuer ID" (UUID format: 12345678-1234-1234-1234-123456789012)
+
+3. **Save the file path** - Put the `.p8` file somewhere safe:
+   ```bash
+   # Create a secure directory
+   mkdir -p ~/.apple-keys
+   
+   # Move the key file there
+   mv ~/Downloads/AuthKey_ABC123DEFG.p8 ~/.apple-keys/
+   
+   # Secure the permissions
+   chmod 600 ~/.apple-keys/AuthKey_ABC123DEFG.p8
+   ```
+
+**Write these down (you'll need them later):**
+- ✅ Key file path: `~/.apple-keys/AuthKey_ABC123DEFG.p8`
+- ✅ Key ID: `ABC123DEFG`
+- ✅ Issuer ID: `12345678-1234-1234-1234-123456789012`
+- ✅ Signing Identity: `Developer ID Application: Your Name (TEAM123)`
+
+### Step 4: Delete the Certificate After Import (Security)
+
+Once imported to Keychain, delete the `.p12` file:
+```bash
+# ONLY do this after verifying the import worked!
+rm ~/Downloads/certificate.p12
+```
+
+The certificate is now safely stored in your Mac's Keychain.
+
+**⚠️ Keep the `.p8` file** - You need this file for notarization. Just keep it secure in `~/.apple-keys/`.
+
+---
+
 ## 📋 Prerequisites
 
 ### 1. Install Homebrew (if not already installed)
@@ -81,7 +177,7 @@ cd src-tauri/target/x86_64-apple-darwin/release/bundle
 
 **You'll find:**
 - `macos/Claude Cozy.app` - The application bundle
-- `dmg/Claude Cozy_0.6.4_x64.dmg` - The DMG installer (if DMG build succeeded)
+- `dmg/Claude Cozy_0.6.8_x64.dmg` - The DMG installer (if DMG build succeeded)
 
 ---
 
@@ -159,7 +255,7 @@ cd src-tauri/target/x86_64-apple-darwin/release/bundle
 hdiutil create -volname "Claude Cozy" \
   -srcfolder "macos/Claude Cozy.app" \
   -ov -format UDZO \
-  "Claude_Cozy_0.6.4_x64.dmg"
+  "Claude_Cozy_0.6.8_x64.dmg"
 ```
 
 ---
@@ -169,10 +265,10 @@ hdiutil create -volname "Claude Cozy" \
 ```bash
 cd src-tauri/target/x86_64-apple-darwin/release/bundle/macos
 
-zip -ry ../Claude.Cozy_0.6.4_x64.zip "Claude Cozy.app"
+zip -ry ../Claude.Cozy_0.6.8_x64.zip "Claude Cozy.app"
 
 # Your ZIP is now at:
-# src-tauri/target/x86_64-apple-darwin/release/bundle/Claude.Cozy_0.6.4_x64.zip
+# src-tauri/target/x86_64-apple-darwin/release/bundle/Claude.Cozy_0.6.8_x64.zip
 ```
 
 ---
@@ -241,8 +337,8 @@ src-tauri/target/x86_64-apple-darwin/release/bundle/
 ├── macos/
 │   └── Claude Cozy.app         # The actual app
 ├── dmg/
-│   └── Claude Cozy_0.6.4_x64.dmg  # DMG installer
-└── Claude.Cozy_0.6.4_x64.zip    # ZIP archive (if you created it)
+│   └── Claude Cozy_0.6.8_x64.dmg  # DMG installer
+└── Claude.Cozy_0.6.8_x64.zip    # ZIP archive (if you created it)
 ```
 
 **For distribution, you want:**
@@ -258,8 +354,8 @@ Once you have the DMG/ZIP:
 1. Go to: https://github.com/Hukushiyu/claude_terminal/releases
 2. Click "Edit" on the latest release (or create a new one)
 3. Drag and drop:
-   - `Claude.Cozy_0.6.4_x64.dmg`
-   - `Claude.Cozy_0.6.4_x64.zip`
+   - `Claude.Cozy_0.6.8_x64.dmg`
+   - `Claude.Cozy_0.6.8_x64.zip`
 4. Click "Update release"
 
 ---

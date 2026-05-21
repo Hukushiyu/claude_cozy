@@ -18,6 +18,8 @@ interface ChatStore {
   sendMessage: (content: string) => Promise<void>;
   appendChunk: (chunk: string) => void;
   finalizeStream: () => void;
+  finalizeStreamTurn: () => void;
+  discardStream: () => void;
   addToolEvent: (event: ToolEventData) => void;
   updateToolEvent: (id: string, updates: Partial<ToolEvent>) => void;
   setThinkingStatus: (status: string | null) => void;
@@ -165,6 +167,33 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     }
   },
 
+  discardStream: () => {
+    set({ streamingMessage: '' });
+  },
+
+  finalizeStreamTurn: () => {
+    const state = get();
+    const streamingMessage = state.streamingMessage;
+
+    if (!streamingMessage || streamingMessage.trim().length === 0) {
+      set({ streamingMessage: '' });
+      return;
+    }
+
+    const assistantMessage: Message = {
+      id: crypto.randomUUID(),
+      role: 'assistant',
+      content: streamingMessage.trim(),
+      timestamp: new Date()
+    };
+
+    // Finalize this turn's bubble and reset streaming, but keep isLoading true
+    set(state => ({
+      messages: [...state.messages, assistantMessage],
+      streamingMessage: '',
+    }));
+  },
+
   finalizeStream: () => {
     const state = get();
     const streamingMessage = state.streamingMessage;
@@ -238,16 +267,16 @@ export const useChatStore = create<ChatStore>((set, get) => ({
   },
 
   setThinkingStatus: (status: string | null) => {
-    // Clear any existing timeout when status updates
+    // Always cancel any pending clear-timeout when status changes
     const existingTimeout = get().thinkingClearTimeout;
-    if (existingTimeout && status === null) {
+    if (existingTimeout) {
       clearTimeout(existingTimeout);
     }
 
     set({
       isThinking: status !== null,
       thinkingStatus: status,
-      thinkingClearTimeout: status === null ? null : get().thinkingClearTimeout
+      thinkingClearTimeout: null
     });
   },
 

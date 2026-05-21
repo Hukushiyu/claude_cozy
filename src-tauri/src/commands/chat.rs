@@ -69,17 +69,21 @@ pub async fn send_message(
     let claude_path = find_claude_cli();
     println!("[CHAT] Using Claude CLI at: {}", claude_path);
     println!("[CHAT] Spawning Claude CLI process...");
-    let mut child = TokioCommand::new(&claude_path)
-        .args(&args)
+    let mut cmd = TokioCommand::new(&claude_path);
+    cmd.args(&args)
         .current_dir(&project_path)
         .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .spawn()
-        .map_err(|e| {
-            let error = format!("Failed to spawn Claude CLI: {}", e);
-            println!("[CHAT ERROR] {}", error);
-            error
-        })?;
+        .stderr(Stdio::piped());
+
+    // Suppress the console window on Windows
+    #[cfg(windows)]
+    cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW
+
+    let mut child = cmd.spawn().map_err(|e| {
+        let error = format!("Failed to spawn Claude CLI: {}", e);
+        println!("[CHAT ERROR] {}", error);
+        error
+    })?;
 
     println!("[CHAT] Process spawned successfully");
 
@@ -100,6 +104,7 @@ pub async fn send_message(
     // Process streaming output
     println!("[CHAT] Starting to read output lines...");
     let mut line_count = 0;
+    let mut session_emitted_text = false; // tracks if a previous assistant turn emitted text
     while let Ok(Some(line)) = lines.next_line().await {
         line_count += 1;
         println!("[CHAT] Received line {}: {}", line_count, line);
@@ -138,6 +143,22 @@ pub async fn send_message(
                                     *awaiting = true;
                                 }
 
+                                // If a previous assistant turn already emitted text and this one
+                                // also has text, finalize the previous bubble first
+                                let this_event_has_text = content_array.iter().any(|item| {
+                                    item.get("type").and_then(|t| t.as_str()) == Some("text")
+                                });
+                                if session_emitted_text && this_event_has_text && !contains_unpermitted_tool {
+                                    println!("[CHAT] New assistant text turn - emitting turn-complete");
+                                    let _ = app.emit("chat:turn-complete", StreamEvent {
+                                        event_type: "turn-complete".to_string(),
+                                        content: None,
+                                        tool_name: None,
+                                        thinking_status: None,
+                                    });
+                                    session_emitted_text = false;
+                                }
+
                                 // SECOND PASS: Process content items
                                 for content_item in content_array {
                                     if let Some(content_type) = content_item.get("type").and_then(|t| t.as_str()) {
@@ -161,6 +182,7 @@ pub async fn send_message(
                                                             tool_name: None,
                                                             thinking_status: None,
                                                         });
+                                                        session_emitted_text = true;
                                                     }
                                                 }
                                             }

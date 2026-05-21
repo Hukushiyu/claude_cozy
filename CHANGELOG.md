@@ -2,6 +2,18 @@
 
 All notable changes to Claude Cozy will be documented in this file.
 
+## [0.6.8] - 2026-05-21
+
+### Fixed
+- **Thinking indicator during tool use** - Indicator now appears below streaming text while tools execute, instead of showing only the static cursor
+- **Console window suppressed** - Claude CLI no longer opens a visible terminal window on Windows
+
+### Added
+- **Developer console** - Right-click → Inspect available in production builds for easier troubleshooting
+
+### Changed
+- **Input hint** - Removed drag & drop reference from input hint text (feature not yet enabled)
+
 ## [0.6.4] - 2026-05-19
 
 ### Changed

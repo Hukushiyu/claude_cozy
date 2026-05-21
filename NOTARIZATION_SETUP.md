@@ -131,7 +131,7 @@ After the build completes, download the Mac artifact and test:
 
 ```bash
 # Extract the app
-unzip Claude.Cozy_0.6.4_aarch64.zip
+unzip Claude.Cozy_0.6.8_aarch64.zip
 
 # Check code signature
 codesign -dv --verbose=4 "Claude Cozy.app"
@@ -196,7 +196,7 @@ There's no per-notarization charge, and the API key can be used unlimited times.
 
 **Users get a seamless experience:**
 
-1. **Download** - User downloads `Claude.Cozy_0.6.4_aarch64.dmg`
+1. **Download** - User downloads `Claude.Cozy_0.6.8_aarch64.dmg`
 2. **Open** - Double-click the DMG
 3. **Install** - Drag to Applications folder
 4. **Launch** - Double-click the app

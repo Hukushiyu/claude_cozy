@@ -13,7 +13,7 @@ A desktop GUI wrapper for Claude CLI built with Tauri + Rust backend for improve
 - **State Management:** Zustand
 - **CLI Integration:** Claude CLI via Rust process spawning
 
-**Current Status:** ✅ Production-ready v0.6.4 - Rebranded, signed Mac builds, DMG support
+**Current Status:** ✅ Production-ready v0.6.8 - Thinking indicator fixes, devtools enabled
 
 ## Architecture
 
@@ -59,7 +59,7 @@ A desktop GUI wrapper for Claude CLI built with Tauri + Rust backend for improve
   - `Cargo.toml` - Rust dependencies
   - `tauri.conf.json` - Tauri configuration
 
-## Current Features (v0.6.4 - Released May 19, 2026)
+## Current Features (v0.6.8 - Released May 21, 2026)
 
 All features from Electron v0.5.2 have been successfully migrated plus new enhancements:
 
@@ -583,7 +583,7 @@ For issues:
 
 ---
 
-**Version:** 0.6.4  
-**Status:** Production-ready - Rebranded to Claude Cozy with signed Mac builds  
+**Version:** 0.6.8  
+**Status:** Production-ready - Thinking indicator fixes, devtools enabled  
 **Framework:** Tauri 2.x + Rust  
 **Last Updated:** May 19, 2026

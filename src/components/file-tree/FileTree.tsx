@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useProjectStore } from '../../stores/projectStore';
 import { useDragStore } from '../../stores/dragStore';
 import { FileNode } from '../../types/ipc';
+import { FilePreviewPanel } from './FilePreviewPanel';
 import { FilePreviewModal } from './FilePreviewModal';
 import { ContextMenu } from './ContextMenu';
 import path from 'path-browserify';
@@ -10,6 +11,7 @@ import { tauriAPI } from '../../utils/tauri-api';
 export function FileTree() {
   const { fileTree, projectPath, loadFileTree, isLoadingTree } = useProjectStore();
   const [previewFile, setPreviewFile] = useState<{ path: string; name: string } | null>(null);
+  const [modalFile, setModalFile] = useState<{ path: string; name: string } | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const { setDraggedFile } = useDragStore();
   const [contextMenu, setContextMenu] = useState<{
@@ -144,27 +146,44 @@ export function FileTree() {
     <div className="flex flex-col h-full">
       {/* Fixed Search Header */}
       <div className="flex-shrink-0 p-2 border-b border-gray-300">
-        <div className="relative">
-          <input
-            type="text"
-            placeholder="Search files..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full px-3 py-2 pr-8 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-claude-accent focus:border-transparent"
-          />
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery('')}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-            >
-              ✕
-            </button>
-          )}
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1">
+            <input
+              type="text"
+              placeholder="Search files..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full px-3 py-2 pr-8 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-claude-accent focus:border-transparent"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+          <button
+            onClick={() => loadFileTree()}
+            disabled={isLoadingTree}
+            className="flex-shrink-0 px-2 py-2 rounded-lg border transition-colors text-xs font-medium flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{
+              backgroundColor: 'var(--theme-bg)',
+              borderColor: 'var(--theme-border)',
+              color: 'var(--theme-text)'
+            }}
+            onMouseEnter={(e) => { if (!isLoadingTree) e.currentTarget.style.backgroundColor = 'var(--theme-hover)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'var(--theme-bg)'; }}
+            title="Refresh file tree"
+          >
+            <span className={isLoadingTree ? 'animate-spin' : ''}>↻</span>
+          </button>
         </div>
       </div>
 
       {/* Scrollable File Tree */}
-      <div className="flex-1 overflow-y-auto p-2">
+      <div className="flex-1 overflow-y-auto p-2 min-h-0">
         {fileTree.map(node => (
           <FileTreeNode
             key={node.path}
@@ -179,11 +198,20 @@ export function FileTree() {
         ))}
       </div>
 
+      {previewFile && (
+        <FilePreviewPanel
+          filePath={previewFile.path}
+          fileName={previewFile.name}
+          onClose={() => setPreviewFile(null)}
+          onExpand={() => setModalFile(previewFile)}
+        />
+      )}
+
       <FilePreviewModal
-        isOpen={previewFile !== null}
-        onClose={() => setPreviewFile(null)}
-        filePath={previewFile?.path || ''}
-        fileName={previewFile?.name || ''}
+        isOpen={modalFile !== null}
+        onClose={() => setModalFile(null)}
+        filePath={modalFile?.path || ''}
+        fileName={modalFile?.name || ''}
       />
 
       {contextMenu && (

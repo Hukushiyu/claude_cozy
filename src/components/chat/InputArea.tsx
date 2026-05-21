@@ -194,7 +194,7 @@ export const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(({ onSend, 
       </div>
 
       <div className="text-xs mt-2" style={{ color: 'var(--theme-textSecondary)' }}>
-        Press Enter to send, Shift+Enter for new line • Drag files from tree to reference them with @
+        Press Enter to send, Shift+Enter for new line
       </div>
     </div>
   );

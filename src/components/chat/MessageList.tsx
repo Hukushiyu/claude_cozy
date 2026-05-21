@@ -35,7 +35,7 @@ export function MessageList({
       ))}
 
       {/* Show thinking indicator when Claude is processing */}
-      {isThinking && thinkingStatus !== null && (!streamingMessage || streamingMessage.trim().length === 0) && (
+      {isThinking && thinkingStatus !== null && (
         <ThinkingIndicator status={thinkingStatus} />
       )}
 

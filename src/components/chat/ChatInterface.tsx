@@ -25,6 +25,8 @@ export function ChatInterface() {
     error,
     appendChunk,
     finalizeStream,
+    finalizeStreamTurn,
+    discardStream,
     addToolEvent,
     setThinkingStatus,
     setError,
@@ -58,6 +60,7 @@ export function ChatInterface() {
 
     let unlistenChunk: UnlistenFn | null = null;
     let unlistenComplete: UnlistenFn | null = null;
+    let unlistenTurnComplete: UnlistenFn | null = null;
     let unlistenError: UnlistenFn | null = null;
     let unlistenTool: UnlistenFn | null = null;
     let unlistenThinking: UnlistenFn | null = null;
@@ -81,6 +84,13 @@ export function ChatInterface() {
 
       if (cancelled) { unlistenChunk(); unlistenComplete(); return; }
 
+      unlistenTurnComplete = await listen('chat:turn-complete', () => {
+        console.log('[ChatInterface] Turn complete - finalizing bubble');
+        finalizeStreamTurn();
+      });
+
+      if (cancelled) { unlistenChunk(); unlistenComplete(); unlistenTurnComplete(); return; }
+
       unlistenError = await tauriAPI.onChatError((error) => {
         console.error('[ChatInterface] Chat error:', error);
         setError(error);
@@ -91,6 +101,9 @@ export function ChatInterface() {
       unlistenTool = await tauriAPI.onToolEvent((event) => {
         console.log('[ChatInterface] Tool event:', event);
         addToolEvent(event);
+        if (event.status === 'running') {
+          setThinkingStatus(`Running ${event.toolName}`);
+        }
       });
 
       if (cancelled) { unlistenChunk(); unlistenComplete(); unlistenError(); unlistenTool(); return; }
@@ -119,6 +132,7 @@ export function ChatInterface() {
       cancelled = true;
       if (unlistenChunk) unlistenChunk();
       if (unlistenComplete) unlistenComplete();
+      if (unlistenTurnComplete) unlistenTurnComplete();
       if (unlistenError) unlistenError();
       if (unlistenTool) unlistenTool();
       if (unlistenThinking) unlistenThinking();
@@ -135,6 +149,9 @@ export function ChatInterface() {
 
       // Emit custom event to notify button that permissions were approved
       window.dispatchEvent(new CustomEvent('permissions-approved-temporarily'));
+
+      // Discard any partial text from the killed first attempt before retrying
+      discardStream();
 
       // Retry the last message with permissions approved
       // Call backend directly without adding another user message bubble

@@ -1,7 +1,7 @@
 import { ask } from '@tauri-apps/plugin-dialog';
 import { open } from '@tauri-apps/plugin-shell';
 
-const CURRENT_VERSION = '0.6.8';
+const CURRENT_VERSION = '0.6.10';
 const GITHUB_REPO = 'Hukushiyu/claude_terminal';
 const CHECK_INTERVAL = 6 * 60 * 60 * 1000; // Check every 6 hours (not every launch)
 

@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { open } from '@tauri-apps/plugin-shell';
+import { APP_VERSION, GITHUB_REPO } from '../../version';
 
-const CURRENT_VERSION = '0.6.3';
-const GITHUB_REPO = 'Hukushiyu/claude_terminal';
+const CURRENT_VERSION = APP_VERSION;
 
 interface GitHubRelease {
   tag_name: string;

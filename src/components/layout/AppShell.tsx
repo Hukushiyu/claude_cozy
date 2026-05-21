@@ -11,6 +11,7 @@ import { ModelSelector } from './ModelSelector';
 import { useProjectStore } from '../../stores/projectStore';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { tauriAPI } from '../../utils/tauri-api';
+import { APP_VERSION } from '../../version';
 import iconImage from '../../assets/icon.png';
 
 const SIDEBAR_MIN = 180;
@@ -173,7 +174,7 @@ export function AppShell() {
                     {assistantName.toUpperCase()}
                   </div>
                   <div className="text-xs mt-1" style={{ color: 'var(--theme-textSecondary)' }}>
-                    v0.6.8
+                    v{APP_VERSION}
                   </div>
                 </div>
               </div>

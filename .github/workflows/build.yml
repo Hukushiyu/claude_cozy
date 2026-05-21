@@ -163,8 +163,11 @@ jobs:
         run: |
           cd src-tauri/target/aarch64-apple-darwin/release/bundle/macos
 
-          # Create ZIP
-          zip -ry "../Claude Cozy_0.6.8_aarch64.zip" "Claude Cozy.app"
+          # Get version from package.json
+          VERSION=$(node -p "require('../../../../../../package.json').version")
+
+          # Create ZIP with dynamic version
+          zip -ry "../Claude.Cozy_${VERSION}_aarch64.app.tar.gz" "Claude Cozy.app"
 
           # Note: DMG creation happens automatically by Tauri if configured in tauri.conf.json
 
@@ -183,7 +186,7 @@ jobs:
           name: claude-cozy-mac-arm
           path: |
             src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/*.dmg
-            src-tauri/target/aarch64-apple-darwin/release/bundle/*.zip
+            src-tauri/target/aarch64-apple-darwin/release/bundle/*.tar.gz
 
   # Mac Intel Build (x64) with Code Signing
   build-mac-intel:
@@ -301,8 +304,11 @@ jobs:
         run: |
           cd src-tauri/target/x86_64-apple-darwin/release/bundle/macos
 
-          # Create ZIP
-          zip -ry "../Claude Cozy_0.6.8_x64.zip" "Claude Cozy.app"
+          # Get version from package.json
+          VERSION=$(node -p "require('../../../../../../package.json').version")
+
+          # Create ZIP with dynamic version
+          zip -ry "../Claude.Cozy_${VERSION}_x64.app.tar.gz" "Claude Cozy.app"
 
           # Note: DMG creation happens automatically by Tauri if configured in tauri.conf.json
 
@@ -321,4 +327,56 @@ jobs:
           name: claude-cozy-mac-intel
           path: |
             src-tauri/target/x86_64-apple-darwin/release/bundle/dmg/*.dmg
-            src-tauri/target/x86_64-apple-darwin/release/bundle/*.zip
+            src-tauri/target/x86_64-apple-darwin/release/bundle/*.tar.gz
+
+  # Generate update manifest (latest.json) for Tauri updater
+  generate-updater-manifest:
+    runs-on: ubuntu-latest
+    needs: [build-windows, build-mac-arm, build-mac-intel]
+    if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Get version from package.json
+        id: version
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION"
+
+      - name: Generate latest.json
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          DATE=$(date -u +"%Y-%m-%d")
+
+          cat > latest.json << EOF
+          {
+            "version": "v${VERSION}",
+            "date": "${DATE}",
+            "platforms": {
+              "windows-x86_64": {
+                "signature": "",
+                "url": "https://github.com/Hukushiyu/claude_terminal/releases/download/v${VERSION}/Claude.Cozy_${VERSION}_x64-setup.exe"
+              },
+              "darwin-x86_64": {
+                "signature": "",
+                "url": "https://github.com/Hukushiyu/claude_terminal/releases/download/v${VERSION}/Claude.Cozy_${VERSION}_x64.app.tar.gz"
+              },
+              "darwin-aarch64": {
+                "signature": "",
+                "url": "https://github.com/Hukushiyu/claude_terminal/releases/download/v${VERSION}/Claude.Cozy_${VERSION}_aarch64.app.tar.gz"
+              }
+            }
+          }
+          EOF
+
+          echo "Generated latest.json:"
+          cat latest.json
+
+      - name: Upload latest.json as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: updater-manifest
+          path: latest.json

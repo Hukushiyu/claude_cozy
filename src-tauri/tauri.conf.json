@@ -60,5 +60,17 @@
       "hardenedRuntime": true
     }
   },
-  "plugins": {}
+  "plugins": {
+    "updater": {
+      "active": true,
+      "endpoints": [
+        "https://github.com/Hukushiyu/claude_terminal/releases/latest/download/latest.json"
+      ],
+      "dialog": true,
+      "pubkey": "",
+      "windows": {
+        "installMode": "passive"
+      }
+    }
+  }
 }

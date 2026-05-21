@@ -1,13 +1,12 @@
+import { check } from '@tauri-apps/plugin-updater';
 import { ask } from '@tauri-apps/plugin-dialog';
-import { open } from '@tauri-apps/plugin-shell';
-import { APP_VERSION, GITHUB_REPO } from '../version';
+import { relaunch } from '@tauri-apps/plugin-process';
 
-const CURRENT_VERSION = APP_VERSION;
 const CHECK_INTERVAL = 6 * 60 * 60 * 1000; // Check every 6 hours (not every launch)
 
 export async function checkForUpdatesOnLaunch() {
   try {
-    // Check if we've checked recently (avoid rate limits)
+    // Check if we've checked recently (avoid excessive checks)
     const lastCheck = localStorage.getItem('lastUpdateCheck');
     const now = Date.now();
 
@@ -19,57 +18,16 @@ export async function checkForUpdatesOnLaunch() {
       }
     }
 
-    console.log('[Updater] Checking GitHub for updates on launch...');
+    console.log('[Updater] Checking for updates...');
     localStorage.setItem('lastUpdateCheck', now.toString());
 
-    // Optional: Add GitHub token for higher rate limits (5000/hour vs 60/hour)
-    // For development, set VITE_GITHUB_TOKEN in .env.local (DO NOT COMMIT)
-    // For production builds, use GitHub Actions secrets
-    const headers: HeadersInit = {
-      'Accept': 'application/vnd.github.v3+json',
-    };
+    const update = await check();
 
-    // Add token from environment variable (if available)
-    const githubToken = import.meta.env.VITE_GITHUB_TOKEN;
-    if (githubToken) {
-      headers['Authorization'] = `Bearer ${githubToken}`;
-      console.log('[Updater] Using authenticated GitHub API (higher rate limits)');
-    }
-
-    const response = await fetch(
-      `https://api.github.com/repos/${GITHUB_REPO}/releases/latest`,
-      { headers }
-    );
-
-    if (!response.ok) {
-      if (response.status === 403) {
-        // Rate limit hit - check if it's rate limit or auth issue
-        const rateLimitRemaining = response.headers.get('X-RateLimit-Remaining');
-        const rateLimitReset = response.headers.get('X-RateLimit-Reset');
-
-        if (rateLimitRemaining === '0' && rateLimitReset) {
-          const resetDate = new Date(parseInt(rateLimitReset) * 1000);
-          console.warn(`[Updater] GitHub API rate limit exceeded. Resets at ${resetDate.toLocaleTimeString()}`);
-        } else {
-          console.warn('[Updater] GitHub API access denied (403)');
-        }
-
-        // Silently fail - don't bother users with rate limit errors
-        return;
-      }
-      throw new Error(`GitHub API returned ${response.status}`);
-    }
-
-    const release = await response.json();
-    const latestVersion = release.tag_name.replace(/^v/, '');
-
-    console.log('[Updater] Latest:', latestVersion, 'Current:', CURRENT_VERSION);
-
-    if (latestVersion !== CURRENT_VERSION) {
-      console.log('[Updater] Update available!');
+    if (update) {
+      console.log(`[Updater] Update available: ${update.version} (current: ${update.currentVersion})`);
 
       const yes = await ask(
-        `A new version (${latestVersion}) is available!\n\nWould you like to download it now?`,
+        `A new version (${update.version}) is available!\n\nWould you like to download and install it now?\n\nThe app will restart after installation.`,
         {
           title: 'Update Available',
           kind: 'info'
@@ -77,20 +35,15 @@ export async function checkForUpdatesOnLaunch() {
       );
 
       if (yes) {
-        console.log('[Updater] Opening download page:', release.html_url);
-        try {
-          await open(release.html_url);
-        } catch (openError) {
-          console.error('[Updater] Failed to open browser:', openError);
-          // Fallback: show error with URL so user can copy it
-          await ask(
-            `Could not open browser automatically.\n\nPlease visit:\n${release.html_url}`,
-            {
-              title: 'Update Link',
-              kind: 'error'
-            }
-          );
-        }
+        console.log('[Updater] User accepted update, downloading...');
+
+        // Download and install the update
+        await update.downloadAndInstall();
+
+        console.log('[Updater] Update installed, relaunching...');
+
+        // Restart the app
+        await relaunch();
       } else {
         console.log('[Updater] User declined update');
       }

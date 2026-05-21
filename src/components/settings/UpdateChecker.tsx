@@ -1,53 +1,33 @@
 import { useState } from 'react';
-import { open } from '@tauri-apps/plugin-shell';
-import { APP_VERSION, GITHUB_REPO } from '../../version';
-
-const CURRENT_VERSION = APP_VERSION;
-
-interface GitHubRelease {
-  tag_name: string;
-  name: string;
-  published_at: string;
-  html_url: string;
-  assets: Array<{
-    name: string;
-    browser_download_url: string;
-  }>;
-}
+import { check } from '@tauri-apps/plugin-updater';
+import { relaunch } from '@tauri-apps/plugin-process';
+import { APP_VERSION } from '../../version';
 
 export function UpdateChecker() {
   const [checking, setChecking] = useState(false);
   const [updateAvailable, setUpdateAvailable] = useState(false);
-  const [updateInfo, setUpdateInfo] = useState<{ version: string; url: string; date: string } | null>(null);
+  const [updateInfo, setUpdateInfo] = useState<{ version: string; date: string; body: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [downloading, setDownloading] = useState(false);
 
   const checkForUpdates = async () => {
     setChecking(true);
     setError(null);
 
     try {
-      console.log('[Updater] Checking GitHub for latest release...');
-      const response = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/releases/latest`);
+      console.log('[Updater] Checking for updates...');
+      const update = await check();
 
-      if (!response.ok) {
-        throw new Error(`GitHub API returned ${response.status}`);
-      }
-
-      const release: GitHubRelease = await response.json();
-      const latestVersion = release.tag_name.replace(/^v/, ''); // Remove 'v' prefix if present
-
-      console.log('[Updater] Latest version:', latestVersion, 'Current:', CURRENT_VERSION);
-
-      if (latestVersion !== CURRENT_VERSION) {
-        console.log('[Updater] Update available!');
+      if (update) {
+        console.log(`[Updater] Update available: ${update.version}`);
         setUpdateAvailable(true);
         setUpdateInfo({
-          version: latestVersion,
-          url: release.html_url,
-          date: new Date(release.published_at).toLocaleDateString()
+          version: update.version,
+          date: update.date || 'Unknown',
+          body: update.body || 'No release notes available'
         });
       } else {
-        console.log('[Updater] You\'re up to date!');
+        console.log('[Updater] Already on latest version');
         setUpdateAvailable(false);
         setUpdateInfo(null);
       }
@@ -59,10 +39,25 @@ export function UpdateChecker() {
     }
   };
 
-  const openDownloadPage = async () => {
-    if (updateInfo) {
-      console.log('[Updater] Opening download page:', updateInfo.url);
-      await open(updateInfo.url);
+  const downloadAndInstall = async () => {
+    if (!updateInfo) return;
+
+    setDownloading(true);
+    setError(null);
+
+    try {
+      console.log('[Updater] Downloading and installing update...');
+      const update = await check();
+
+      if (update) {
+        await update.downloadAndInstall();
+        console.log('[Updater] Update installed, relaunching...');
+        await relaunch();
+      }
+    } catch (err) {
+      console.error('[Updater] Download/install failed:', err);
+      setError(err instanceof Error ? err.message : 'Failed to download and install update');
+      setDownloading(false);
     }
   };
 
@@ -71,7 +66,7 @@ export function UpdateChecker() {
       <div>
         <h3 className="text-sm font-medium text-gray-700 mb-2">Software Updates</h3>
         <p className="text-xs text-gray-500 mb-3">
-          Check for new versions of Claude Cozy
+          Automatic download and installation of new versions
         </p>
       </div>
 
@@ -94,14 +89,14 @@ export function UpdateChecker() {
             <div className="flex-1">
               <div className="text-sm font-medium text-blue-800">Update Available</div>
               <div className="text-xs text-blue-600 mt-1">
-                Version {updateInfo.version} • Released {updateInfo.date}
+                Version {updateInfo.version} • {updateInfo.date}
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {!updateAvailable && !checking && !updateInfo && (
+      {!updateAvailable && !checking && !updateInfo && !downloading && (
         <div className="bg-green-50 border border-green-200 rounded-lg p-3">
           <div className="flex items-center gap-2">
             <span className="text-green-600">✓</span>
@@ -110,10 +105,19 @@ export function UpdateChecker() {
         </div>
       )}
 
+      {downloading && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+          <div className="flex items-center gap-2">
+            <span className="text-blue-600 animate-spin">⏳</span>
+            <div className="text-sm text-blue-800">Downloading and installing update...</div>
+          </div>
+        </div>
+      )}
+
       <div className="flex gap-2">
         <button
           onClick={checkForUpdates}
-          disabled={checking}
+          disabled={checking || downloading}
           className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium"
         >
           {checking ? 'Checking...' : 'Check for Updates'}
@@ -121,16 +125,17 @@ export function UpdateChecker() {
 
         {updateAvailable && (
           <button
-            onClick={openDownloadPage}
-            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
+            onClick={downloadAndInstall}
+            disabled={downloading}
+            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium"
           >
-            Download Update
+            {downloading ? 'Installing...' : 'Download & Install'}
           </button>
         )}
       </div>
 
       <div className="text-xs text-gray-500">
-        Current version: {CURRENT_VERSION}
+        Current version: {APP_VERSION}
       </div>
     </div>
   );

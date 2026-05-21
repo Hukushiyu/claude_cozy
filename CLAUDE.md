@@ -4,6 +4,25 @@ A desktop GUI wrapper for Claude CLI built with Tauri + Rust backend for improve
 
 ## ⚠️ CRITICAL RULES - READ FIRST
 
+### 🚨 ALWAYS ASK BEFORE PUSHING TO GITHUB
+
+**MANDATORY: Never `git push` without explicit permission!**
+
+Before running `git push origin master`:
+1. ✅ Show what will be pushed: `git status`, `git log origin/master..HEAD`
+2. ✅ **ASK USER:** "Ready to push X commits to GitHub? This will trigger a build."
+3. ✅ Wait for explicit "yes" / "go ahead" / "push it"
+4. ❌ NEVER assume the user wants to push immediately
+
+**Why:**
+- User may want to add more changes to the same commit/push
+- GitHub Actions gets cluttered with too many builds
+- Batching changes is more efficient
+
+**Exception:** If user explicitly says "push it now" or "go ahead and push", then proceed.
+
+---
+
 ### Git/Documentation Policy
 
 **NEVER commit documentation files except these three:**
@@ -37,7 +56,24 @@ A desktop GUI wrapper for Claude CLI built with Tauri + Rust backend for improve
 - **State Management:** Zustand
 - **CLI Integration:** Claude CLI via Rust process spawning
 
-**Current Status:** ✅ Production-ready v0.6.8 - Thinking indicator fixes, devtools enabled
+**Current Status:** ✅ Production-ready v0.6.10 - Auto-update system implemented
+
+## Auto-Update System
+
+**How it works:**
+1. App checks GitHub Releases on launch (every 6 hours)
+2. If update available, shows dialog with version info
+3. User clicks "Download & Install"
+4. **Automatically downloads** the installer
+5. **Automatically installs** the update
+6. **Automatically restarts** the app
+
+**No more manual downloads!** Users get seamless updates.
+
+**Requirements for releases:**
+- Must upload a `latest.json` manifest to each release
+- Template: `.github/update-manifest-template.json`
+- See "Creating Releases" section below for details
 
 ## Architecture
 

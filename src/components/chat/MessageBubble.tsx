@@ -34,7 +34,7 @@ export function MessageBubble({ message, isStreaming = false }: MessageBubblePro
               border: '1px dashed var(--theme-border)',
               color: 'var(--theme-textSecondary)',
               whiteSpace: 'pre-wrap',
-              wordBreak: 'break-words'
+              wordBreak: 'break-word'
             }}
           >
             {message.content}

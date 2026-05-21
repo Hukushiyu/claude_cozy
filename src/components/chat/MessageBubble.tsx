@@ -8,6 +8,41 @@ interface MessageBubbleProps {
 
 export function MessageBubble({ message, isStreaming = false }: MessageBubbleProps) {
   const isUser = message.role === 'user';
+  const isThought = message.role === 'thought';
+
+  if (isThought) {
+    return (
+      <div className="flex justify-start mb-2">
+        <details className="max-w-3xl min-w-0 group">
+          <summary
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg cursor-pointer select-none text-sm list-none"
+            style={{
+              backgroundColor: 'var(--theme-bg)',
+              border: '1px dashed var(--theme-border)',
+              color: 'var(--theme-textSecondary)'
+            }}
+          >
+            <span>💭</span>
+            <span className="italic">Claude's thinking</span>
+            <span className="ml-1 text-xs opacity-60 group-open:hidden">▶</span>
+            <span className="ml-1 text-xs opacity-60 hidden group-open:inline">▼</span>
+          </summary>
+          <div
+            className="mt-1 px-4 py-3 rounded-xl text-sm italic"
+            style={{
+              backgroundColor: 'var(--theme-bg)',
+              border: '1px dashed var(--theme-border)',
+              color: 'var(--theme-textSecondary)',
+              whiteSpace: 'pre-wrap',
+              wordBreak: 'break-words'
+            }}
+          >
+            {message.content}
+          </div>
+        </details>
+      </div>
+    );
+  }
 
   return (
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-4`}>
@@ -15,17 +50,15 @@ export function MessageBubble({ message, isStreaming = false }: MessageBubblePro
         className="max-w-3xl min-w-0 px-4 py-3 rounded-xl shadow-md transition-shadow hover:shadow-lg"
         style={{
           backgroundColor: isUser ? 'var(--theme-userBubble)' : 'var(--theme-assistantBubble)',
-          color: isUser ? 'var(--theme-text)' : 'var(--theme-text)',
+          color: 'var(--theme-text)',
           border: isUser ? 'none' : `1px solid var(--theme-border)`
         }}
       >
         {isUser ? (
-          // User messages: plain text
           <div className="whitespace-pre-wrap break-words">
             {message.content}
           </div>
         ) : (
-          // Assistant messages: markdown rendering
           <div>
             <MarkdownContent content={message.content} />
             {isStreaming && (

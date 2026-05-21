@@ -165,6 +165,14 @@ export const tauriAPI = {
     });
   },
 
+  onThoughtChunk: async (callback: (text: string) => void): Promise<UnlistenFn> => {
+    return await listen<StreamEvent>('chat:thought', (event) => {
+      if (event.payload.content) {
+        callback(event.payload.content);
+      }
+    });
+  },
+
   onToolEvent: async (callback: (event: ToolEventData) => void): Promise<UnlistenFn> => {
     return await listen<StreamEvent>('chat:tool', (event) => {
       if (event.payload.toolName) {

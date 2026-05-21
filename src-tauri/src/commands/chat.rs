@@ -233,8 +233,15 @@ pub async fn send_message(
                                                 }
                                             }
                                             "thinking" => {
-                                                // Ignore thinking blocks (extended thinking)
-                                                println!("[CHAT] Ignoring thinking block");
+                                                if let Some(text) = content_item.get("thinking").and_then(|t| t.as_str()) {
+                                                    println!("[CHAT] Emitting thought block ({} chars)", text.len());
+                                                    let _ = app.emit("chat:thought", StreamEvent {
+                                                        event_type: "thought".to_string(),
+                                                        content: Some(text.to_string()),
+                                                        tool_name: None,
+                                                        thinking_status: None,
+                                                    });
+                                                }
                                             }
                                             _ => {
                                                 println!("[CHAT] Unknown content type: {}", content_type);

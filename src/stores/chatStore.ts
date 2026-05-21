@@ -17,6 +17,7 @@ interface ChatStore {
 
   sendMessage: (content: string) => Promise<void>;
   appendChunk: (chunk: string) => void;
+  appendThought: (text: string) => void;
   finalizeStream: () => void;
   finalizeStreamTurn: () => void;
   discardStream: () => void;
@@ -165,6 +166,16 @@ export const useChatStore = create<ChatStore>((set, get) => ({
 
       set({ thinkingClearTimeout: timeout });
     }
+  },
+
+  appendThought: (text: string) => {
+    const thought: Message = {
+      id: crypto.randomUUID(),
+      role: 'thought',
+      content: text,
+      timestamp: new Date()
+    };
+    set(state => ({ messages: [...state.messages, thought] }));
   },
 
   discardStream: () => {

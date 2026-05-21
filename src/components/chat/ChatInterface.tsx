@@ -24,6 +24,7 @@ export function ChatInterface() {
     isLoading,
     error,
     appendChunk,
+    appendThought,
     finalizeStream,
     finalizeStreamTurn,
     discardStream,
@@ -64,6 +65,7 @@ export function ChatInterface() {
     let unlistenError: UnlistenFn | null = null;
     let unlistenTool: UnlistenFn | null = null;
     let unlistenThinking: UnlistenFn | null = null;
+    let unlistenThought: UnlistenFn | null = null;
     let unlistenPermission: UnlistenFn | null = null;
 
     // Set up all listeners asynchronously
@@ -115,6 +117,13 @@ export function ChatInterface() {
 
       if (cancelled) { unlistenChunk(); unlistenComplete(); unlistenError(); unlistenTool(); unlistenThinking(); return; }
 
+      unlistenThought = await tauriAPI.onThoughtChunk((text) => {
+        console.log('[ChatInterface] Thought block received:', text.substring(0, 50));
+        appendThought(text);
+      });
+
+      if (cancelled) { unlistenChunk(); unlistenComplete(); unlistenError(); unlistenTool(); unlistenThinking(); unlistenThought(); return; }
+
       unlistenPermission = await listen<PermissionRequest>('chat:permission-request', (event) => {
         console.log('[ChatInterface] Permission request:', event.payload);
         setPermissionRequest(event.payload);
@@ -136,6 +145,7 @@ export function ChatInterface() {
       if (unlistenError) unlistenError();
       if (unlistenTool) unlistenTool();
       if (unlistenThinking) unlistenThinking();
+      if (unlistenThought) unlistenThought();
       if (unlistenPermission) unlistenPermission();
     };
   }, []); // EMPTY dependencies - only run once on mount

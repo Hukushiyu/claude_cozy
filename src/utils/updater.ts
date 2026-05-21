@@ -77,8 +77,20 @@ export async function checkForUpdatesOnLaunch() {
       );
 
       if (yes) {
-        console.log('[Updater] Opening download page...');
-        await open(release.html_url);
+        console.log('[Updater] Opening download page:', release.html_url);
+        try {
+          await open(release.html_url);
+        } catch (openError) {
+          console.error('[Updater] Failed to open browser:', openError);
+          // Fallback: show error with URL so user can copy it
+          await ask(
+            `Could not open browser automatically.\n\nPlease visit:\n${release.html_url}`,
+            {
+              title: 'Update Link',
+              kind: 'error'
+            }
+          );
+        }
       } else {
         console.log('[Updater] User declined update');
       }

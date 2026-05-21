@@ -2,6 +2,30 @@
 
 A desktop GUI wrapper for Claude CLI built with Tauri + Rust backend for improved performance and smaller bundle sizes.
 
+## ⚠️ CRITICAL RULES - READ FIRST
+
+### Git/Documentation Policy
+
+**NEVER commit documentation files except these three:**
+- ✅ `CLAUDE.md` - Project instructions (this file)
+- ✅ `CHANGELOG.md` - Version history
+- ✅ `README.md` - User-facing documentation
+
+**FORBIDDEN:**
+- ❌ Do NOT create or commit any other `.md` files (build guides, setup docs, feature specs, etc.)
+- ❌ Do NOT commit PDFs, guides, or documentation artifacts
+- ❌ Keep working notes LOCAL ONLY (they're in `.gitignore`)
+
+**Why:** User wants minimal repo - only essential files in git.
+
+**How to document:**
+- Add notes to `CLAUDE.md` if it's for developers/Claude
+- Add to `CHANGELOG.md` if it's version history
+- Add to `README.md` if it's for end users
+- Otherwise, keep it local (don't commit)
+
+---
+
 ## Project Overview
 
 **Purpose:** Provide developers with a visual interface for Claude CLI without terminal complexity.

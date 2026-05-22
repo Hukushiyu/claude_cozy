@@ -67,7 +67,7 @@
         "https://github.com/Hukushiyu/claude_terminal/releases/latest/download/latest.json"
       ],
       "dialog": true,
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDk5NzFENEIzRDFGMDExOUQKUldTZEVmRFJzOVJ4bVhPREFSRnJyc0VNbURwSFZtWHh3Ujk0WDl1Z0VDY2lpUjErazRDMTJNZ2YK",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDgwQUY3QkJBRUIzNkNBRUMKUldUc3lqYnJ1bnV2Z0VUVVJ4cWpobUZsV2ttMGZLOXllQUROaVIycTVNc1lSS0NoZWdKVEw1RGYK",
       "windows": {
         "installMode": "passive"
       }

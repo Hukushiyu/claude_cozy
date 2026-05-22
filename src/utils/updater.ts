@@ -2,7 +2,7 @@ import { check } from '@tauri-apps/plugin-updater';
 import { ask } from '@tauri-apps/plugin-dialog';
 import { relaunch } from '@tauri-apps/plugin-process';
 
-const CHECK_INTERVAL = 6 * 60 * 60 * 1000; // Check every 6 hours (not every launch)
+const CHECK_INTERVAL = 5 * 60 * 1000; // Check every 5 minutes (for testing - change to 6 hours for production)
 
 export async function checkForUpdatesOnLaunch() {
   try {

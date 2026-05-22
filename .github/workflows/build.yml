@@ -37,6 +37,9 @@ jobs:
         run: npm install
 
       - name: Build Windows app
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: npm run tauri:build:win
 
       - name: Upload Windows artifact
@@ -109,11 +112,9 @@ jobs:
         if: github.event_name != 'pull_request'
         env:
           APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
-        run: |
-          # Set signing identity for Tauri
-          export TAURI_SIGNING_PRIVATE_KEY=""
-          export TAURI_SIGNING_PRIVATE_KEY_PASSWORD=""
-          npm run tauri:build:mac:arm64
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: npm run tauri:build:mac:arm64
 
       - name: Build Mac ARM app (unsigned - PR only)
         if: github.event_name == 'pull_request'
@@ -205,10 +206,26 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Version: $VERSION"
 
-      - name: Generate latest.json
+      - name: Download Windows artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: claude-cozy-windows
+          path: ./artifacts/windows
+
+      - name: Download Mac ARM artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: claude-cozy-mac-arm
+          path: ./artifacts/mac-arm
+
+      - name: Generate latest.json with signatures
         run: |
           VERSION="${{ steps.version.outputs.version }}"
           DATE=$(date -u +"%Y-%m-%d")
+
+          # Extract signatures from .sig files generated during build
+          WINDOWS_SIG=$(cat ./artifacts/windows/*.exe.sig 2>/dev/null || echo "")
+          MAC_ARM_SIG=$(cat ./artifacts/mac-arm/*.tar.gz.sig 2>/dev/null || echo "")
 
           cat > latest.json << EOF
           {
@@ -216,9 +233,11 @@ jobs:
             "date": "${DATE}",
             "platforms": {
               "windows-x86_64": {
+                "signature": "${WINDOWS_SIG}",
                 "url": "https://github.com/Hukushiyu/claude_terminal/releases/download/v${VERSION}/Claude.Cozy_${VERSION}_x64-setup.exe"
               },
               "darwin-aarch64": {
+                "signature": "${MAC_ARM_SIG}",
                 "url": "https://github.com/Hukushiyu/claude_terminal/releases/download/v${VERSION}/Claude.Cozy_${VERSION}_aarch64.app.tar.gz"
               }
             }

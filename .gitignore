@@ -50,3 +50,5 @@ certificate-base64.txt
 # Environment files
 .env.local
 .env
+.tauri-signing.key
+.tauri-signing.key.pub

@@ -48,7 +48,9 @@ jobs:
           name: claude-cozy-windows
           path: |
             src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/*.exe
+            src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/*.exe.sig
             src-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi/*.msi
+            src-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi/*.msi.sig
 
   # Mac ARM Build (M1/M2/M3) with Code Signing
   build-mac-arm:
@@ -187,7 +189,9 @@ jobs:
           name: claude-cozy-mac-arm
           path: |
             src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/*.dmg
+            src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/*.dmg.sig
             src-tauri/target/aarch64-apple-darwin/release/bundle/*.tar.gz
+            src-tauri/target/aarch64-apple-darwin/release/bundle/*.tar.gz.sig
 
   # Generate update manifest (latest.json) for Tauri updater
   generate-updater-manifest:
@@ -223,9 +227,36 @@ jobs:
           VERSION="${{ steps.version.outputs.version }}"
           DATE=$(date -u +"%Y-%m-%d")
 
+          echo "=== Checking for signature files ==="
+          echo "Windows artifacts:"
+          ls -la ./artifacts/windows/ || echo "No Windows artifacts found"
+          echo ""
+          echo "Mac ARM artifacts:"
+          ls -la ./artifacts/mac-arm/ || echo "No Mac ARM artifacts found"
+          echo ""
+
           # Extract signatures from .sig files generated during build
-          WINDOWS_SIG=$(cat ./artifacts/windows/*.exe.sig 2>/dev/null || echo "")
-          MAC_ARM_SIG=$(cat ./artifacts/mac-arm/*.tar.gz.sig 2>/dev/null || echo "")
+          WINDOWS_SIG_FILE=$(find ./artifacts/windows -name "*.nsis.zip.sig" -o -name "*-setup.exe.sig" | head -1)
+          MAC_ARM_SIG_FILE=$(find ./artifacts/mac-arm -name "*.app.tar.gz.sig" | head -1)
+
+          echo "Windows sig file: $WINDOWS_SIG_FILE"
+          echo "Mac ARM sig file: $MAC_ARM_SIG_FILE"
+
+          if [ -f "$WINDOWS_SIG_FILE" ]; then
+            WINDOWS_SIG=$(cat "$WINDOWS_SIG_FILE")
+            echo "Windows signature loaded: ${WINDOWS_SIG:0:50}..."
+          else
+            echo "ERROR: Windows signature not found!"
+            WINDOWS_SIG=""
+          fi
+
+          if [ -f "$MAC_ARM_SIG_FILE" ]; then
+            MAC_ARM_SIG=$(cat "$MAC_ARM_SIG_FILE")
+            echo "Mac ARM signature loaded: ${MAC_ARM_SIG:0:50}..."
+          else
+            echo "ERROR: Mac ARM signature not found!"
+            MAC_ARM_SIG=""
+          fi
 
           cat > latest.json << EOF
           {
@@ -244,7 +275,8 @@ jobs:
           }
           EOF
 
-          echo "Generated latest.json:"
+          echo ""
+          echo "=== Generated latest.json ==="
           cat latest.json
 
       - name: Upload latest.json as artifact

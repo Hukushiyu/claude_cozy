@@ -1,6 +1,6 @@
 [package]
 name = "claude-cozy"
-version = "0.6.14"
+version = "0.6.15"
 description = "Desktop GUI wrapper for Claude CLI"
 authors = ["Claude Cozy"]
 license = "MIT"

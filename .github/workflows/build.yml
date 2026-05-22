@@ -188,151 +188,10 @@ jobs:
             src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/*.dmg
             src-tauri/target/aarch64-apple-darwin/release/bundle/*.tar.gz
 
-  # Mac Intel Build (x64) with Code Signing
-  build-mac-intel:
-    runs-on: macos-13  # Intel Mac (x64)
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: x86_64-apple-darwin
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Import code signing certificate
-        if: github.event_name != 'pull_request'
-        env:
-          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
-          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-        run: |
-          # Create variables
-          CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
-          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
-          KEYCHAIN_PASSWORD=$(openssl rand -base64 32)
-
-          # Decode certificate from base64 and save to file
-          echo -n "$APPLE_CERTIFICATE" | base64 --decode -o $CERTIFICATE_PATH
-
-          # Create temporary keychain
-          security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
-          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
-          security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
-
-          # Import certificate to keychain
-          security import $CERTIFICATE_PATH \
-            -P "$APPLE_CERTIFICATE_PASSWORD" \
-            -A \
-            -t cert \
-            -f pkcs12 \
-            -k $KEYCHAIN_PATH
-
-          # Allow codesign to access the certificate
-          security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
-
-          # Add keychain to search list
-          security list-keychain -d user -s $KEYCHAIN_PATH
-
-          # Verify certificate is available
-          echo "Available signing identities:"
-          security find-identity -v -p codesigning $KEYCHAIN_PATH
-
-      - name: Build Mac Intel app (signed)
-        if: github.event_name != 'pull_request'
-        env:
-          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
-        run: |
-          # Set signing identity for Tauri
-          export TAURI_SIGNING_PRIVATE_KEY=""
-          export TAURI_SIGNING_PRIVATE_KEY_PASSWORD=""
-          npm run tauri:build:mac:x64
-
-      - name: Build Mac Intel app (unsigned - PR only)
-        if: github.event_name == 'pull_request'
-        run: npm run tauri:build:mac:x64
-
-      - name: Notarize Mac Intel app
-        if: github.event_name != 'pull_request'
-        env:
-          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
-          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
-          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
-        run: |
-          echo "Notarizing .app bundle..."
-          APP_PATH="src-tauri/target/x86_64-apple-darwin/release/bundle/macos/Claude Cozy.app"
-
-          # Save API key to temporary file (notarytool expects a file path)
-          API_KEY_FILE="${RUNNER_TEMP}/AuthKey.p8"
-          echo "$APPLE_API_KEY" > "$API_KEY_FILE"
-
-          # Create a temporary zip for notarization (Apple requires zip format)
-          NOTARIZE_ZIP="${RUNNER_TEMP}/notarize.zip"
-          ditto -c -k --keepParent "$APP_PATH" "$NOTARIZE_ZIP"
-
-          # Submit for notarization
-          echo "Submitting to Apple notarization service..."
-          xcrun notarytool submit "$NOTARIZE_ZIP" \
-            --key "$API_KEY_FILE" \
-            --key-id "$APPLE_API_KEY_ID" \
-            --issuer "$APPLE_API_ISSUER" \
-            --wait
-
-          # Clean up API key file
-          rm "$API_KEY_FILE"
-
-          # Staple the notarization ticket to the app
-          echo "Stapling notarization ticket..."
-          xcrun stapler staple "$APP_PATH"
-
-          # Verify stapling
-          echo "Verifying notarization..."
-          xcrun stapler validate "$APP_PATH"
-          spctl -a -vv -t install "$APP_PATH"
-
-          echo "✅ App notarized and stapled successfully"
-
-      - name: Create ZIP from .app bundle
-        run: |
-          cd src-tauri/target/x86_64-apple-darwin/release/bundle/macos
-
-          # Get version from package.json
-          VERSION=$(node -p "require('../../../../../../package.json').version")
-
-          # Create ZIP with dynamic version
-          zip -ry "../Claude.Cozy_${VERSION}_x64.app.tar.gz" "Claude Cozy.app"
-
-          # Note: DMG creation happens automatically by Tauri if configured in tauri.conf.json
-
-          echo "=== Build outputs ==="
-          ls -la ../
-
-      - name: Clean up keychain
-        if: always() && github.event_name != 'pull_request'
-        run: |
-          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
-          security delete-keychain $KEYCHAIN_PATH || true
-
-      - name: Upload Mac Intel artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: claude-cozy-mac-intel
-          path: |
-            src-tauri/target/x86_64-apple-darwin/release/bundle/dmg/*.dmg
-            src-tauri/target/x86_64-apple-darwin/release/bundle/*.tar.gz
-
   # Generate update manifest (latest.json) for Tauri updater
   generate-updater-manifest:
     runs-on: ubuntu-latest
-    needs: [build-windows, build-mac-arm, build-mac-intel]
+    needs: [build-windows, build-mac-arm]
     if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main'
 
     steps:
@@ -359,10 +218,6 @@ jobs:
               "windows-x86_64": {
                 "signature": "",
                 "url": "https://github.com/Hukushiyu/claude_terminal/releases/download/v${VERSION}/Claude.Cozy_${VERSION}_x64-setup.exe"
-              },
-              "darwin-x86_64": {
-                "signature": "",
-                "url": "https://github.com/Hukushiyu/claude_terminal/releases/download/v${VERSION}/Claude.Cozy_${VERSION}_x64.app.tar.gz"
               },
               "darwin-aarch64": {
                 "signature": "",

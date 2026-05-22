@@ -6,10 +6,6 @@
       "signature": "",
       "url": "https://github.com/Hukushiyu/claude_terminal/releases/download/VERSION_PLACEHOLDER/Claude.Cozy_VERSION_PLACEHOLDER_x64-setup.exe"
     },
-    "darwin-x86_64": {
-      "signature": "",
-      "url": "https://github.com/Hukushiyu/claude_terminal/releases/download/VERSION_PLACEHOLDER/Claude.Cozy_VERSION_PLACEHOLDER_x64.app.tar.gz"
-    },
     "darwin-aarch64": {
       "signature": "",
       "url": "https://github.com/Hukushiyu/claude_terminal/releases/download/VERSION_PLACEHOLDER/Claude.Cozy_VERSION_PLACEHOLDER_aarch64.app.tar.gz"

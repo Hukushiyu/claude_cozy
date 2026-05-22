@@ -42,6 +42,24 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: npm run tauri:build:win
 
+      - name: Sign Windows bundles
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: |
+          # Get version from package.json
+          $VERSION = (Get-Content package.json | ConvertFrom-Json).version
+
+          # Sign NSIS installer
+          npx tauri signer sign "src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/Claude.Cozy_${VERSION}_x64-setup.exe" --private-key "$env:TAURI_SIGNING_PRIVATE_KEY" --password "$env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD"
+
+          # Sign MSI installer
+          npx tauri signer sign "src-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi/Claude.Cozy_${VERSION}_x64_en-US.msi" --private-key "$env:TAURI_SIGNING_PRIVATE_KEY" --password "$env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD"
+
+          # Verify signatures were created
+          Write-Output "=== Signature files created ==="
+          Get-ChildItem -Path "src-tauri/target/x86_64-pc-windows-msvc/release/bundle" -Recurse -Filter "*.sig"
+
       - name: Upload Windows artifact
         uses: actions/upload-artifact@v4
         with:
@@ -176,6 +194,32 @@ jobs:
 
           echo "=== Build outputs ==="
           ls -la ../
+
+      - name: Sign Mac bundles
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: |
+          # Get version from package.json
+          VERSION=$(node -p "require('./package.json').version")
+
+          # Sign DMG
+          if [ -f "src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/Claude Cozy_${VERSION}_aarch64.dmg" ]; then
+            npx tauri signer sign "src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/Claude Cozy_${VERSION}_aarch64.dmg" \
+              --private-key "$TAURI_SIGNING_PRIVATE_KEY" \
+              --password "$TAURI_SIGNING_PRIVATE_KEY_PASSWORD"
+          fi
+
+          # Sign app.tar.gz
+          if [ -f "src-tauri/target/aarch64-apple-darwin/release/bundle/Claude.Cozy_${VERSION}_aarch64.app.tar.gz" ]; then
+            npx tauri signer sign "src-tauri/target/aarch64-apple-darwin/release/bundle/Claude.Cozy_${VERSION}_aarch64.app.tar.gz" \
+              --private-key "$TAURI_SIGNING_PRIVATE_KEY" \
+              --password "$TAURI_SIGNING_PRIVATE_KEY_PASSWORD"
+          fi
+
+          # Verify signatures were created
+          echo "=== Signature files created ==="
+          find src-tauri/target/aarch64-apple-darwin/release/bundle -name "*.sig"
 
       - name: Clean up keychain
         if: always() && github.event_name != 'pull_request'

@@ -1,6 +1,6 @@
 {
   "name": "claude-cozy",
-  "version": "0.6.10",
+  "version": "0.6.11",
   "description": "Desktop GUI wrapper for Claude CLI - Tauri Edition",
   "type": "module",
   "scripts": {

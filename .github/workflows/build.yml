@@ -216,11 +216,9 @@ jobs:
             "date": "${DATE}",
             "platforms": {
               "windows-x86_64": {
-                "signature": "",
                 "url": "https://github.com/Hukushiyu/claude_terminal/releases/download/v${VERSION}/Claude.Cozy_${VERSION}_x64-setup.exe"
               },
               "darwin-aarch64": {
-                "signature": "",
                 "url": "https://github.com/Hukushiyu/claude_terminal/releases/download/v${VERSION}/Claude.Cozy_${VERSION}_aarch64.app.tar.gz"
               }
             }

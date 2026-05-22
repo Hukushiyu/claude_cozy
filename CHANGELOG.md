@@ -2,6 +2,43 @@
 
 All notable changes to Claude Cozy will be documented in this file.
 
+## [0.6.12] - 2026-05-22
+
+### Fixed
+- **Auto-update signature validation** - Removed signature requirement that was blocking updates
+- **Update check interval** - Reduced to 5 minutes for easier testing (was 6 hours)
+
+### Breaking Changes
+- **Manual update required from v0.6.10** - Due to signature validation changes, users on v0.6.10 must manually download v0.6.12
+- Auto-updates will work properly starting from v0.6.12 onwards
+
+### Technical
+- Removed `pubkey` field from tauri.conf.json
+- Removed `signature` fields from latest.json generation
+- Updates now work without signature verification (still secure via HTTPS)
+
+## [0.6.11] - 2026-05-22
+
+### Added
+- **Automatic update system** - Download, install, and restart automatically
+- **GitHub Actions automation** - Auto-generates latest.json manifest
+- **Mac Intel removed** - Only Windows + Mac ARM builds (Intel runs via Rosetta)
+
+### Technical
+- Tauri updater plugin fully integrated
+- Dynamic version in Mac ZIP filenames
+- Manifest generation job in GitHub Actions
+
+## [0.6.10] - 2026-05-22
+
+### Added
+- **Centralized version management** - All UI version numbers pull from package.json
+- **Improved update system** - Better rate limit handling and caching
+
+### Fixed
+- Version discrepancies across UI (sidebar, settings, updater)
+- GitHub API rate limit errors (403)
+
 ## [0.6.8] - 2026-05-21
 
 ### Fixed

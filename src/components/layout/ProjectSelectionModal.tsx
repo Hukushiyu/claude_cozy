@@ -1,22 +1,29 @@
 import { useState, useEffect } from 'react';
 import { useProjectStore } from '../../stores/projectStore';
+import { logWithTimestamp } from '../../utils/logger';
 
 interface ProjectSelectionModalProps {
   onSelectProject: () => void;
 }
 
+logWithTimestamp('[ProjectSelectionModal.tsx] Module loaded');
+
 export function ProjectSelectionModal({ onSelectProject }: ProjectSelectionModalProps) {
+  logWithTimestamp('[ProjectSelectionModal] Component function called');
   const [dontShowAgain, setDontShowAgain] = useState(false);
   const [isSimpleMode, setIsSimpleMode] = useState(false);
   const { isSelectingProject } = useProjectStore();
 
   useEffect(() => {
+    logWithTimestamp('[ProjectSelectionModal] useEffect: checking hideProjectWelcome');
     // Check if user has seen the welcome before
     const hideWelcome = localStorage.getItem('hideProjectWelcome') === 'true';
     setIsSimpleMode(hideWelcome);
+    logWithTimestamp('[ProjectSelectionModal] Simple mode:', hideWelcome);
   }, []);
 
   const handleSelectProject = () => {
+    logWithTimestamp('[ProjectSelectionModal] Select button clicked');
     if (dontShowAgain) {
       localStorage.setItem('hideProjectWelcome', 'true');
     }
@@ -25,6 +32,7 @@ export function ProjectSelectionModal({ onSelectProject }: ProjectSelectionModal
 
   // Simple mode - just project selection, no intro
   if (isSimpleMode) {
+    logWithTimestamp('[ProjectSelectionModal] Rendering simple mode');
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full mx-4 p-6 animate-fade-in">
@@ -43,6 +51,7 @@ export function ProjectSelectionModal({ onSelectProject }: ProjectSelectionModal
           <button
             onClick={handleSelectProject}
             disabled={isSelectingProject}
+            onMouseEnter={() => logWithTimestamp('[ProjectSelectionModal] Button hover - interactive!')}
             className="w-full py-3 px-6 bg-claude-accent text-white rounded-lg font-medium hover:opacity-90 transition-all hover:shadow-lg text-base disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isSelectingProject ? (
@@ -58,6 +67,8 @@ export function ProjectSelectionModal({ onSelectProject }: ProjectSelectionModal
       </div>
     );
   }
+
+  logWithTimestamp('[ProjectSelectionModal] Rendering full welcome mode');
 
   // Full welcome mode - first time experience
   return (

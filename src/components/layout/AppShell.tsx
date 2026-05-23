@@ -12,13 +12,17 @@ import { useProjectStore } from '../../stores/projectStore';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { tauriAPI } from '../../utils/tauri-api';
 import { APP_VERSION } from '../../version';
+import { logWithTimestamp } from '../../utils/logger';
 import iconImage from '../../assets/icon.png';
 
 const SIDEBAR_MIN = 180;
 const SIDEBAR_MAX = 480;
 const SIDEBAR_DEFAULT = 256;
 
+logWithTimestamp('[AppShell.tsx] Module loaded');
+
 export function AppShell() {
+  logWithTimestamp('[AppShell] Component function called');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [sidebarWidth, setSidebarWidth] = useState(() => {
     const saved = localStorage.getItem('sidebarWidth');
@@ -38,14 +42,19 @@ export function AppShell() {
 
   // Load settings on mount
   useEffect(() => {
+    logWithTimestamp('[AppShell] useEffect: loadSettings starting');
     loadSettings();
+    logWithTimestamp('[AppShell] useEffect: loadSettings complete');
   }, [loadSettings]);
 
   // Check Claude CLI installation and authentication on mount
   useEffect(() => {
+    logWithTimestamp('[AppShell] useEffect: checkCli starting');
     const checkCli = async () => {
       try {
+        logWithTimestamp('[AppShell] Calling tauriAPI.checkClaudeCli()');
         const result = await tauriAPI.checkClaudeCli();
+        logWithTimestamp('[AppShell] checkClaudeCli returned:', result);
         if (!result.installed || !result.authenticated) {
           setCliError(result.error || 'Claude CLI setup issue');
         }

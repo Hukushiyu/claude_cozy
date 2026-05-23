@@ -37,6 +37,7 @@ export function AppShell() {
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showClearHistoryModal, setShowClearHistoryModal] = useState(false);
   const [cliError, setCliError] = useState<string | null>(null);
+  const [isVerifyingCli, setIsVerifyingCli] = useState(false);
   const { projectPath, selectProject, isSelectingProject } = useProjectStore();
   const { assistantName, loadSettings } = useSettingsStore();
 
@@ -47,24 +48,45 @@ export function AppShell() {
     logWithTimestamp('[AppShell] useEffect: loadSettings complete');
   }, [loadSettings]);
 
-  // Check Claude CLI installation and authentication on mount
+  // Check Claude CLI installation and authentication (first launch only, after project selection)
   useEffect(() => {
-    logWithTimestamp('[AppShell] useEffect: checkCli starting');
+    // Skip if already verified in a previous session
+    const isVerified = localStorage.getItem('cliVerified') === 'true';
+    if (isVerified) {
+      logWithTimestamp('[AppShell] CLI already verified, skipping check');
+      return;
+    }
+
+    // Only check after user has selected a project
+    if (!projectPath) {
+      logWithTimestamp('[AppShell] No project selected yet, deferring CLI check');
+      return;
+    }
+
+    logWithTimestamp('[AppShell] First launch with project - checking CLI');
     const checkCli = async () => {
+      setIsVerifyingCli(true);
       try {
         logWithTimestamp('[AppShell] Calling tauriAPI.checkClaudeCli()');
         const result = await tauriAPI.checkClaudeCli();
         logWithTimestamp('[AppShell] checkClaudeCli returned:', result);
+
         if (!result.installed || !result.authenticated) {
           setCliError(result.error || 'Claude CLI setup issue');
+        } else {
+          // Mark as verified for future launches
+          localStorage.setItem('cliVerified', 'true');
+          logWithTimestamp('[AppShell] CLI verified and cached');
         }
       } catch (error) {
         console.error('Failed to check Claude CLI:', error);
         setCliError('Failed to check Claude CLI status');
+      } finally {
+        setIsVerifyingCli(false);
       }
     };
     checkCli();
-  }, []);
+  }, [projectPath]); // Re-run when projectPath changes
 
   // API key check not needed for Tauri - always uses CLI
   // (keeping empty useEffect structure for consistency)
@@ -156,6 +178,46 @@ export function AppShell() {
       <CommandsModal isOpen={showCommandsModal} onClose={() => setShowCommandsModal(false)} />
       <SettingsModal isOpen={showSettingsModal} onClose={() => setShowSettingsModal(false)} />
       <ClearHistoryModal isOpen={showClearHistoryModal} onClose={() => setShowClearHistoryModal(false)} />
+
+      {/* CLI Verification Loading Overlay (first launch only) */}
+      {isVerifyingCli && (
+        <div
+          id="cli-verification-overlay"
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'var(--theme-bg)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999,
+          }}
+        >
+          <img
+            src={iconImage}
+            alt="Claude Cozy"
+            style={{ width: '80px', height: '80px', marginBottom: '20px' }}
+          />
+          <div style={{
+            fontSize: '18px',
+            fontWeight: '600',
+            color: 'var(--theme-text)',
+            marginBottom: '8px'
+          }}>
+            Verifying Claude CLI...
+          </div>
+          <div style={{
+            fontSize: '14px',
+            color: 'var(--theme-textSecondary)'
+          }}>
+            This only happens once
+          </div>
+        </div>
+      )}
 
       <div className="flex h-screen overflow-hidden flex-col" style={{ backgroundColor: 'var(--theme-bg)' }}>
         {/* Mac Title Bar - draggable area for traffic lights */}

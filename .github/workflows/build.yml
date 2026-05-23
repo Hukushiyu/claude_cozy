@@ -52,10 +52,10 @@ jobs:
           "${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}" | Out-File -FilePath $KEY_FILE -NoNewline -Encoding utf8
 
           # Sign NSIS installer
-          npx tauri signer sign "src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/Claude.Cozy_${VERSION}_x64-setup.exe" --private-key-path "$KEY_FILE" --password "${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}"
+          npx tauri signer sign "src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/Claude Cozy_${VERSION}_x64-setup.exe" --private-key-path "$KEY_FILE" --password "${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}"
 
           # Sign MSI installer
-          npx tauri signer sign "src-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi/Claude.Cozy_${VERSION}_x64_en-US.msi" --private-key-path "$KEY_FILE" --password "${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}"
+          npx tauri signer sign "src-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi/Claude Cozy_${VERSION}_x64_en-US.msi" --private-key-path "$KEY_FILE" --password "${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}"
 
           # Clean up key file
           Remove-Item $KEY_FILE
@@ -216,8 +216,8 @@ jobs:
           fi
 
           # Sign app.tar.gz
-          if [ -f "src-tauri/target/aarch64-apple-darwin/release/bundle/Claude.Cozy_${VERSION}_aarch64.app.tar.gz" ]; then
-            npx tauri signer sign "src-tauri/target/aarch64-apple-darwin/release/bundle/Claude.Cozy_${VERSION}_aarch64.app.tar.gz" \
+          if [ -f "src-tauri/target/aarch64-apple-darwin/release/bundle/Claude Cozy_${VERSION}_aarch64.app.tar.gz" ]; then
+            npx tauri signer sign "src-tauri/target/aarch64-apple-darwin/release/bundle/Claude Cozy_${VERSION}_aarch64.app.tar.gz" \
               --private-key-path "$KEY_FILE" \
               --password "${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}"
           fi

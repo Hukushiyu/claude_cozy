@@ -7,41 +7,33 @@ export function getCaretCoordinates(
 ): { top: number; left: number } {
   // Get textarea position in viewport
   const elementRect = element.getBoundingClientRect();
+  const computed = window.getComputedStyle(element);
 
   // Create hidden mirror div with same styling
   const mirror = document.createElement('div');
-  const computed = window.getComputedStyle(element);
 
-  // Copy all computed styles to mirror
+  // Copy text styles
   const properties = [
     'boxSizing',
     'width',
-    'height',
-    'overflowX',
-    'overflowY',
-    'borderTopWidth',
-    'borderRightWidth',
-    'borderBottomWidth',
-    'borderLeftWidth',
     'paddingTop',
     'paddingRight',
     'paddingBottom',
     'paddingLeft',
+    'borderTopWidth',
+    'borderRightWidth',
+    'borderBottomWidth',
+    'borderLeftWidth',
     'fontStyle',
     'fontVariant',
     'fontWeight',
-    'fontStretch',
     'fontSize',
-    'fontSizeAdjust',
     'lineHeight',
     'fontFamily',
     'textAlign',
-    'textTransform',
     'textIndent',
-    'textDecoration',
     'letterSpacing',
     'wordSpacing',
-    'tabSize',
     'whiteSpace',
     'wordBreak',
     'wordWrap',
@@ -51,14 +43,14 @@ export function getCaretCoordinates(
     mirror.style.setProperty(prop, computed.getPropertyValue(prop));
   });
 
-  // Position mirror at same location as textarea
+  // Position mirror off-screen but visible
   mirror.style.position = 'absolute';
   mirror.style.visibility = 'hidden';
-  mirror.style.top = '0';
-  mirror.style.left = '0';
-  mirror.style.overflow = 'hidden';
   mirror.style.whiteSpace = 'pre-wrap';
   mirror.style.wordWrap = 'break-word';
+  mirror.style.overflow = 'hidden';
+  mirror.style.top = '0';
+  mirror.style.left = '0';
 
   // Set content up to cursor position
   const textBeforeCursor = element.value.substring(0, element.selectionStart);
@@ -69,23 +61,24 @@ export function getCaretCoordinates(
   marker.textContent = '|';
   mirror.appendChild(marker);
 
-  // Append to body temporarily
+  // Append to body
   document.body.appendChild(mirror);
 
-  // Measure marker position within mirror
-  const markerRect = marker.getBoundingClientRect();
+  // Get marker position relative to mirror
+  const markerOffsetTop = marker.offsetTop;
+  const markerOffsetLeft = marker.offsetLeft;
 
   // Clean up
   document.body.removeChild(mirror);
 
-  // Calculate viewport position: element position + marker position within mirror
-  const paddingLeft = parseInt(computed.paddingLeft);
-  const paddingTop = parseInt(computed.paddingTop);
-  const borderLeft = parseInt(computed.borderLeftWidth);
-  const borderTop = parseInt(computed.borderTopWidth);
+  // Calculate viewport position
+  const paddingLeft = parseInt(computed.paddingLeft) || 0;
+  const paddingTop = parseInt(computed.paddingTop) || 0;
+  const borderLeft = parseInt(computed.borderLeftWidth) || 0;
+  const borderTop = parseInt(computed.borderTopWidth) || 0;
 
   return {
-    top: elementRect.top + borderTop + paddingTop + (markerRect.top - elementRect.top),
-    left: elementRect.left + borderLeft + paddingLeft + (markerRect.left - elementRect.left)
+    top: elementRect.top + borderTop + paddingTop + markerOffsetTop,
+    left: elementRect.left + borderLeft + paddingLeft + markerOffsetLeft
   };
 }

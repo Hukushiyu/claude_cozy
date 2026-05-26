@@ -1,5 +1,11 @@
-import { useState, KeyboardEvent, useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
+import { useState, KeyboardEvent, useRef, useEffect, forwardRef, useImperativeHandle, ChangeEvent } from 'react';
 import { useDragStore } from '../../stores/dragStore';
+import { useProjectStore } from '../../stores/projectStore';
+import { AutocompleteDropdown } from './AutocompleteDropdown';
+import { Suggestion } from '../../types/chat';
+import { SLASH_COMMANDS, flattenFileTree } from '../../utils/suggestions';
+import { fuzzySearch } from '../../utils/fuzzySearch';
+import { getCaretCoordinates } from '../../utils/caretPosition';
 
 interface InputAreaProps {
   onSend: (message: string) => void;
@@ -15,6 +21,15 @@ export const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(({ onSend, 
   const [isDragOver, setIsDragOver] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { draggedFile } = useDragStore();
+  const { fileTree, projectPath } = useProjectStore();
+
+  // Autocomplete state
+  const [showAutocomplete, setShowAutocomplete] = useState(false);
+  const [autocompleteType, setAutocompleteType] = useState<'command' | 'file' | null>(null);
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [cursorPosition, setCursorPosition] = useState({ top: 0, left: 0 });
+  const [triggerPosition, setTriggerPosition] = useState(0);
 
   // Expose focus method to parent via ref
   useImperativeHandle(ref, () => ({
@@ -133,20 +148,131 @@ export const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(({ onSend, 
     }
   }, [draggedFile]);
 
+  const handleInputChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
+    const newValue = e.target.value;
+    const cursorPos = e.target.selectionStart;
+
+    setInput(newValue);
+
+    // Check for trigger characters (/ or @) at start of word
+    const textBeforeCursor = newValue.substring(0, cursorPos);
+    const lastWord = textBeforeCursor.split(/\s/).pop() || '';
+
+    if (lastWord.startsWith('/')) {
+      // Command autocomplete
+      const query = lastWord.substring(1);
+      const filtered = fuzzySearch(query, SLASH_COMMANDS);
+      const topSuggestions = filtered.slice(0, 50).map(m => m.item);
+
+      setSuggestions(topSuggestions);
+      setAutocompleteType('command');
+      setTriggerPosition(cursorPos - lastWord.length);
+      setShowAutocomplete(true);
+      setActiveIndex(0);
+
+      // Update cursor position for dropdown
+      if (textareaRef.current) {
+        const pos = getCaretCoordinates(textareaRef.current);
+        setCursorPosition(pos);
+      }
+    } else if (lastWord.startsWith('@') && projectPath && fileTree.length > 0) {
+      // File autocomplete
+      const query = lastWord.substring(1);
+      const fileList = flattenFileTree(fileTree, projectPath);
+      const filtered = fuzzySearch(query, fileList);
+      const topSuggestions = filtered.slice(0, 50).map(m => m.item);
+
+      setSuggestions(topSuggestions);
+      setAutocompleteType('file');
+      setTriggerPosition(cursorPos - lastWord.length);
+      setShowAutocomplete(true);
+      setActiveIndex(0);
+
+      // Update cursor position for dropdown
+      if (textareaRef.current) {
+        const pos = getCaretCoordinates(textareaRef.current);
+        setCursorPosition(pos);
+      }
+    } else {
+      setShowAutocomplete(false);
+    }
+  };
+
+  const handleSuggestionSelect = (suggestion: Suggestion) => {
+    const textBefore = input.substring(0, triggerPosition);
+    const textAfter = input.substring(textareaRef.current!.selectionStart);
+
+    let replacement = '';
+    if (suggestion.type === 'command') {
+      replacement = suggestion.name + ' ';
+    } else {
+      replacement = '@' + suggestion.relativePath + ' ';
+    }
+
+    const newInput = textBefore + replacement + textAfter;
+    setInput(newInput);
+    setShowAutocomplete(false);
+
+    // Position cursor after replacement
+    const newCursorPos = textBefore.length + replacement.length;
+    setTimeout(() => {
+      textareaRef.current?.setSelectionRange(newCursorPos, newCursorPos);
+      textareaRef.current?.focus();
+    }, 0);
+  };
+
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+    // If autocomplete is open, intercept navigation keys
+    if (showAutocomplete) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setActiveIndex(prev => Math.min(prev + 1, suggestions.length - 1));
+        return;
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setActiveIndex(prev => Math.max(prev - 1, 0));
+        return;
+      }
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        if (suggestions.length > 0) {
+          handleSuggestionSelect(suggestions[activeIndex]);
+        }
+        return;
+      }
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setShowAutocomplete(false);
+        return;
+      }
+    }
+
+    // Original Enter key handling (send message)
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
     }
   };
 
+  // Listen for hover events from dropdown
+  useEffect(() => {
+    const handleHover = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      setActiveIndex(customEvent.detail);
+    };
+
+    window.addEventListener('autocomplete-hover', handleHover);
+    return () => window.removeEventListener('autocomplete-hover', handleHover);
+  }, []);
+
   return (
-    <div className="border-t p-4" style={{ borderColor: 'var(--theme-border)', backgroundColor: 'var(--theme-bg)' }}>
+    <div className="border-t p-4 relative" style={{ borderColor: 'var(--theme-border)', backgroundColor: 'var(--theme-bg)' }}>
       <div className="flex gap-2">
         <textarea
           ref={textareaRef}
           value={input}
-          onChange={(e) => setInput(e.target.value)}
+          onChange={handleInputChange}
           onKeyDown={handleKeyDown}
           onDrop={handleDrop}
           onDragOver={handleDragOver}
@@ -195,7 +321,20 @@ export const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(({ onSend, 
 
       <div className="text-xs mt-2" style={{ color: 'var(--theme-textSecondary)' }}>
         Press Enter to send, Shift+Enter for new line
+        {showAutocomplete && ' • Use ↑↓ to navigate, Enter to select, Esc to close'}
       </div>
+
+      {/* Autocomplete dropdown */}
+      {showAutocomplete && (
+        <AutocompleteDropdown
+          suggestions={suggestions}
+          activeIndex={activeIndex}
+          onSelect={handleSuggestionSelect}
+          onClose={() => setShowAutocomplete(false)}
+          position={cursorPosition}
+          type={autocompleteType!}
+        />
+      )}
     </div>
   );
 });

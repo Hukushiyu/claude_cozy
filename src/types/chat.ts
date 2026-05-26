@@ -50,3 +50,21 @@ export type CombinedChatItem =
 export type GroupedChatItem =
   | { type: 'message'; data: Message; timestamp: Date }
   | { type: 'tool-group'; data: ConsolidatedTool[]; timestamp: Date; id: string };
+
+// Types for autocomplete suggestions
+export interface CommandSuggestion {
+  type: 'command';
+  name: string;
+  description: string;
+  icon: string;
+}
+
+export interface FileSuggestion {
+  type: 'file';
+  name: string;
+  relativePath: string;
+  absolutePath: string;
+  icon: string;
+}
+
+export type Suggestion = CommandSuggestion | FileSuggestion;

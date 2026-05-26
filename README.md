@@ -1,6 +1,6 @@
 # Claude Cozy
 
-A beautiful, lightweight desktop GUI wrapper for the Claude CLI. Built with Tauri for blazing-fast performance and tiny bundle sizes.
+An attractive, lightweight and fun desktop GUI wrapper for the Claude CLI. Built with Tauri for blazing-fast performance and tiny bundle sizes.
 
 ![Version](https://img.shields.io/badge/version-0.6.16-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)

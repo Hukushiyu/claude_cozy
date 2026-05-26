@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { ToolEvent } from '../../types/chat';
+import { ToolEvent, ConsolidatedTool } from '../../types/chat';
 import hljs from 'highlight.js';
 import 'highlight.js/styles/github.css';
 
 interface ToolCardProps {
-  tool: ToolEvent;
+  tool?: ToolEvent;
+  consolidatedTool?: ConsolidatedTool;
   variant?: 'full' | 'compact';
 }
 
@@ -54,10 +55,157 @@ function highlightCode(code: string, language?: string): string {
   return hljs.highlightAuto(code).value;
 }
 
-export function ToolCard({ tool, variant = 'full' }: ToolCardProps) {
+export function ToolCard({ tool, consolidatedTool, variant = 'full' }: ToolCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const isCompact = variant === 'compact';
+
+  // For compact mode with consolidated tools
+  if (isCompact && consolidatedTool) {
+    const { toolName, instances, count, status } = consolidatedTool;
+    const icon = getToolIcon(toolName);
+    const colorClass = getToolColor(toolName);
+
+    const statusColors = {
+      running: 'bg-yellow-100 text-yellow-800 border-yellow-300',
+      success: 'bg-green-100 text-green-800 border-green-300',
+      error: 'bg-red-100 text-red-800 border-red-300'
+    };
+
+    const statusIcons = {
+      running: '⏳',
+      success: '✓',
+      error: '✗'
+    };
+
+    return (
+      <div
+        onClick={() => setShowModal(true)}
+        className={`border rounded-lg ${colorClass} w-[280px] flex-shrink-0 p-3 transition-all shadow-sm hover:shadow-lg cursor-pointer`}
+      >
+        <div className="flex items-center gap-2 mb-2">
+          <span className="text-lg">{icon}</span>
+          <span className="font-semibold text-sm truncate">
+            {toolName} {count > 1 && `(${count})`}
+          </span>
+          <span className={`text-xs px-1.5 py-0.5 rounded-full border ${statusColors[status]} ml-auto flex-shrink-0`}>
+            {statusIcons[status]}
+          </span>
+        </div>
+        <div className="text-xs text-gray-600 font-mono">
+          {count === 1 ? (
+            <div className="truncate">
+              {(() => {
+                const singleTool = instances[0];
+                if (toolName === 'Read' || toolName === 'Write' || toolName === 'Edit') {
+                  return singleTool.input.file_path || JSON.stringify(singleTool.input);
+                }
+                if (toolName === 'Bash') {
+                  return singleTool.input.command || JSON.stringify(singleTool.input);
+                }
+                return JSON.stringify(singleTool.input);
+              })()}
+            </div>
+          ) : (
+            <div>{count} operations</div>
+          )}
+        </div>
+        {instances[0].duration && (
+          <div className="text-xs text-gray-500 mt-2">
+            {formatDuration(instances.reduce((sum, t) => sum + (t.duration || 0), 0) / count)} avg
+          </div>
+        )}
+
+        {/* Modal for expanded view */}
+        {showModal && (
+          <div
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowModal(false);
+            }}
+          >
+            <div
+              className="bg-white rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[80vh] overflow-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-semibold flex items-center gap-2">
+                  <span>{icon}</span>
+                  {toolName} {count > 1 && `(${count} operations)`}
+                </h3>
+                <button
+                  onClick={() => setShowModal(false)}
+                  className="text-gray-500 hover:text-gray-700 text-2xl leading-none"
+                >
+                  ×
+                </button>
+              </div>
+
+              <span className={`text-xs px-2 py-1 rounded-full border ${statusColors[status]}`}>
+                {statusIcons[status]} {status}
+              </span>
+
+              {/* List all instances */}
+              <div className="mt-4 space-y-4">
+                {instances.map((instance, idx) => (
+                  <div key={instance.id} className="border rounded-lg p-4 bg-gray-50">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="font-semibold text-sm">
+                        Operation {idx + 1}
+                        <span className={`ml-2 text-xs px-2 py-0.5 rounded-full border ${statusColors[instance.status]}`}>
+                          {statusIcons[instance.status]} {instance.status}
+                        </span>
+                      </div>
+                      {instance.duration && (
+                        <span className="text-xs text-gray-500">
+                          {formatDuration(instance.duration)}
+                        </span>
+                      )}
+                    </div>
+
+                    {Object.keys(instance.input).length > 0 && (
+                      <div className="mt-2">
+                        <div className="text-xs font-semibold text-gray-600 mb-1">Input:</div>
+                        <pre className="bg-white p-2 rounded text-xs overflow-auto border">
+                          {JSON.stringify(instance.input, null, 2)}
+                        </pre>
+                      </div>
+                    )}
+
+                    {instance.output && (
+                      <div className="mt-2">
+                        <div className="text-xs font-semibold text-gray-600 mb-1">Output:</div>
+                        <div className="bg-gray-900 text-gray-100 p-2 rounded overflow-auto text-xs font-mono max-h-32">
+                          <pre>{instance.output.substring(0, 500)}{instance.output.length > 500 ? '...' : ''}</pre>
+                        </div>
+                      </div>
+                    )}
+
+                    {instance.error && (
+                      <div className="mt-2">
+                        <div className="text-xs font-semibold text-red-600 mb-1">Error:</div>
+                        <pre className="bg-red-50 p-2 rounded text-xs overflow-auto text-red-800 border border-red-200">
+                          {instance.error}
+                        </pre>
+                      </div>
+                    )}
+
+                    <div className="mt-2 text-xs text-gray-500">
+                      {instance.timestamp.toLocaleString()}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Original tool card logic for non-consolidated or full variant
+  if (!tool) return null;
 
   const statusColors = {
     running: 'bg-yellow-100 text-yellow-800 border-yellow-300',
@@ -120,102 +268,7 @@ export function ToolCard({ tool, variant = 'full' }: ToolCardProps) {
   const colorClass = getToolColor(tool.toolName);
   const icon = getToolIcon(tool.toolName);
 
-  // Compact variant for horizontal grouping
-  if (isCompact) {
-    return (
-      <div
-        onClick={() => setShowModal(true)}
-        className={`border rounded-lg ${colorClass} w-[280px] flex-shrink-0 p-3 transition-all shadow-sm hover:shadow-lg cursor-pointer`}
-      >
-        <div className="flex items-center gap-2 mb-2">
-          <span className="text-lg">{icon}</span>
-          <span className="font-semibold text-sm truncate">{tool.toolName}</span>
-          <span className={`text-xs px-1.5 py-0.5 rounded-full border ${statusColors[tool.status]} ml-auto flex-shrink-0`}>
-            {statusIcons[tool.status]}
-          </span>
-        </div>
-        <div className="text-xs text-gray-600 truncate font-mono">
-          {formatInput()}
-        </div>
-        {tool.duration && (
-          <div className="text-xs text-gray-500 mt-2">
-            {formatDuration(tool.duration)}
-          </div>
-        )}
-
-        {/* Modal for expanded view */}
-        {showModal && (
-          <div
-            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
-            onClick={(e) => {
-              e.stopPropagation();
-              setShowModal(false);
-            }}
-          >
-            <div
-              className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-auto"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-semibold flex items-center gap-2">
-                  <span>{icon}</span>
-                  {tool.toolName}
-                </h3>
-                <button
-                  onClick={() => setShowModal(false)}
-                  className="text-gray-500 hover:text-gray-700 text-2xl leading-none"
-                >
-                  ×
-                </button>
-              </div>
-
-              <span className={`text-xs px-2 py-1 rounded-full border ${statusColors[tool.status]}`}>
-                {statusIcons[tool.status]} {tool.status}
-              </span>
-
-              {Object.keys(tool.input).length > 0 && (
-                <div className="mt-4">
-                  <h4 className="font-semibold mb-2">Input:</h4>
-                  <pre className="bg-gray-100 p-3 rounded text-sm overflow-auto">
-                    {JSON.stringify(tool.input, null, 2)}
-                  </pre>
-                </div>
-              )}
-
-              {tool.output && (
-                <div className="mt-4">
-                  <h4 className="font-semibold mb-2">Output:</h4>
-                  <div className="bg-gray-900 text-gray-100 p-3 rounded overflow-auto text-sm font-mono">
-                    <pre
-                      dangerouslySetInnerHTML={{
-                        __html: highlightCode(tool.output, detectLanguage())
-                      }}
-                    />
-                  </div>
-                </div>
-              )}
-
-              {tool.error && (
-                <div className="mt-4">
-                  <h4 className="font-semibold mb-2 text-red-600">Error:</h4>
-                  <pre className="bg-red-50 p-3 rounded text-sm overflow-auto text-red-800">
-                    {tool.error}
-                  </pre>
-                </div>
-              )}
-
-              <div className="mt-4 text-sm text-gray-500">
-                {tool.timestamp.toLocaleString()}
-                {tool.duration && ` • ${formatDuration(tool.duration)}`}
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  // Full variant (original behavior)
+  // Full variant (original behavior) - compact is handled above with consolidatedTool
   return (
     <div className={`border rounded-lg ${colorClass} mb-3 overflow-hidden transition-all shadow-sm hover:shadow-md`}>
       {/* Header */}

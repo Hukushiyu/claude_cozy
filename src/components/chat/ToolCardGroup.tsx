@@ -1,17 +1,17 @@
-import { ToolEvent } from '../../types/chat';
+import { ConsolidatedTool } from '../../types/chat';
 import { ToolCard } from './ToolCard';
 
 interface ToolCardGroupProps {
-  tools: ToolEvent[];
+  tools: ConsolidatedTool[];
 }
 
 export function ToolCardGroup({ tools }: ToolCardGroupProps) {
   return (
     <div className="flex flex-wrap gap-2 mb-3">
-      {tools.map(tool => (
+      {tools.map((consolidatedTool) => (
         <ToolCard
-          key={tool.id}
-          tool={tool}
+          key={`${consolidatedTool.toolName}-${consolidatedTool.instances[0].id}`}
+          consolidatedTool={consolidatedTool}
           variant="compact"
         />
       ))}

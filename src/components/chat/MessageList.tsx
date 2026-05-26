@@ -1,4 +1,4 @@
-import { Message, ToolEvent, CombinedChatItem, GroupedChatItem } from '../../types/chat';
+import { Message, ToolEvent, CombinedChatItem, GroupedChatItem, ConsolidatedTool, ToolStatus } from '../../types/chat';
 import { MessageBubble } from './MessageBubble';
 import { ToolCardGroup } from './ToolCardGroup';
 import { ThinkingIndicator } from './ThinkingIndicator';
@@ -9,6 +9,40 @@ interface MessageListProps {
   streamingMessage: string | null;
   isThinking: boolean;
   thinkingStatus: string | null;
+}
+
+function consolidateTools(tools: ToolEvent[]): ConsolidatedTool[] {
+  // Group by tool name
+  const toolMap = new Map<string, ToolEvent[]>();
+
+  for (const tool of tools) {
+    if (!toolMap.has(tool.toolName)) {
+      toolMap.set(tool.toolName, []);
+    }
+    toolMap.get(tool.toolName)!.push(tool);
+  }
+
+  // Convert to consolidated format
+  const consolidated: ConsolidatedTool[] = [];
+
+  for (const [toolName, instances] of toolMap.entries()) {
+    // Determine overall status: running > error > success
+    let status: ToolStatus = 'success';
+    if (instances.some(t => t.status === 'running')) {
+      status = 'running';
+    } else if (instances.some(t => t.status === 'error')) {
+      status = 'error';
+    }
+
+    consolidated.push({
+      toolName,
+      instances,
+      count: instances.length,
+      status
+    });
+  }
+
+  return consolidated;
 }
 
 function groupConsecutiveTools(items: CombinedChatItem[]): GroupedChatItem[] {
@@ -22,9 +56,10 @@ function groupConsecutiveTools(items: CombinedChatItem[]): GroupedChatItem[] {
       // Message found - flush current tool group
       if (currentToolGroup.length > 0) {
         const firstTool = currentToolGroup[0];
+        const consolidated = consolidateTools(currentToolGroup);
         grouped.push({
           type: 'tool-group',
-          data: currentToolGroup,
+          data: consolidated,
           timestamp: firstTool.timestamp,
           id: `group-${firstTool.id}`
         });
@@ -37,9 +72,10 @@ function groupConsecutiveTools(items: CombinedChatItem[]): GroupedChatItem[] {
   // Flush remaining tools at end
   if (currentToolGroup.length > 0) {
     const firstTool = currentToolGroup[0];
+    const consolidated = consolidateTools(currentToolGroup);
     grouped.push({
       type: 'tool-group',
-      data: currentToolGroup,
+      data: consolidated,
       timestamp: firstTool.timestamp,
       id: `group-${firstTool.id}`
     });

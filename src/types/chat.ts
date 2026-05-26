@@ -35,10 +35,18 @@ export interface ToolEventGroup {
   id: string;
 }
 
+export interface ConsolidatedTool {
+  toolName: string;
+  instances: ToolEvent[];
+  count: number;
+  // Overall status: 'running' if any running, 'error' if any errors, otherwise 'success'
+  status: ToolStatus;
+}
+
 export type CombinedChatItem =
   | { type: 'message'; data: Message; timestamp: Date }
   | { type: 'tool'; data: ToolEvent; timestamp: Date };
 
 export type GroupedChatItem =
   | { type: 'message'; data: Message; timestamp: Date }
-  | { type: 'tool-group'; data: ToolEvent[]; timestamp: Date; id: string };
+  | { type: 'tool-group'; data: ConsolidatedTool[]; timestamp: Date; id: string };

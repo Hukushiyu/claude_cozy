@@ -5,6 +5,9 @@
 export function getCaretCoordinates(
   element: HTMLTextAreaElement
 ): { top: number; left: number } {
+  // Get textarea position in viewport
+  const elementRect = element.getBoundingClientRect();
+
   // Create hidden mirror div with same styling
   const mirror = document.createElement('div');
   const computed = window.getComputedStyle(element);
@@ -48,7 +51,7 @@ export function getCaretCoordinates(
     mirror.style.setProperty(prop, computed.getPropertyValue(prop));
   });
 
-  // Position mirror off-screen
+  // Position mirror at same location as textarea
   mirror.style.position = 'absolute';
   mirror.style.visibility = 'hidden';
   mirror.style.top = '0';
@@ -64,22 +67,25 @@ export function getCaretCoordinates(
   // Add marker span at cursor position
   const marker = document.createElement('span');
   marker.textContent = '|';
-  marker.style.position = 'relative';
   mirror.appendChild(marker);
 
   // Append to body temporarily
   document.body.appendChild(mirror);
 
-  // Measure marker position
+  // Measure marker position within mirror
   const markerRect = marker.getBoundingClientRect();
-  const elementRect = element.getBoundingClientRect();
 
   // Clean up
   document.body.removeChild(mirror);
 
-  // Return viewport coordinates (for fixed positioning)
+  // Calculate viewport position: element position + marker position within mirror
+  const paddingLeft = parseInt(computed.paddingLeft);
+  const paddingTop = parseInt(computed.paddingTop);
+  const borderLeft = parseInt(computed.borderLeftWidth);
+  const borderTop = parseInt(computed.borderTopWidth);
+
   return {
-    top: markerRect.top,
-    left: markerRect.left
+    top: elementRect.top + borderTop + paddingTop + (markerRect.top - elementRect.top),
+    left: elementRect.left + borderLeft + paddingLeft + (markerRect.left - elementRect.left)
   };
 }

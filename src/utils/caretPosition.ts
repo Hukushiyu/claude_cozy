@@ -77,9 +77,9 @@ export function getCaretCoordinates(
   // Clean up
   document.body.removeChild(mirror);
 
-  // Calculate relative position
+  // Return viewport coordinates (for fixed positioning)
   return {
-    top: markerRect.top - elementRect.top + element.scrollTop,
-    left: markerRect.left - elementRect.left + element.scrollLeft
+    top: markerRect.top,
+    left: markerRect.left
   };
 }

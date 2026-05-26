@@ -43,7 +43,7 @@ export function AutocompleteDropdown({
   return (
     <div
       ref={dropdownRef}
-      className="absolute bg-white border border-gray-300 rounded-lg shadow-lg max-h-[300px] overflow-y-auto z-50"
+      className="fixed bg-white border border-gray-300 rounded-lg shadow-lg max-h-[300px] overflow-y-auto z-50"
       style={{
         top: position.top + 24,
         left: position.left,

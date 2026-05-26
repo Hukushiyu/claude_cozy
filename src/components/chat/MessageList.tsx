@@ -1,6 +1,5 @@
 import { Message, ToolEvent, CombinedChatItem, GroupedChatItem } from '../../types/chat';
 import { MessageBubble } from './MessageBubble';
-import { ToolCard } from './ToolCard';
 import { ToolCardGroup } from './ToolCardGroup';
 import { ThinkingIndicator } from './ThinkingIndicator';
 

@@ -45,7 +45,7 @@ export function AutocompleteDropdown({
       ref={dropdownRef}
       className="fixed bg-white border border-gray-300 rounded-lg shadow-lg max-h-[300px] overflow-y-auto z-50"
       style={{
-        top: position.top + 24,
+        bottom: `${window.innerHeight - position.top + 4}px`, // 4px gap above cursor
         left: position.left,
         minWidth: '300px',
         maxWidth: '500px'

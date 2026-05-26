@@ -27,3 +27,18 @@ export interface ChatState {
   thinkingStatus: string | null; // "Thinking...", "Processing...", etc.
   error: string | null;
 }
+
+// Types for grouped tool display
+export interface ToolEventGroup {
+  type: 'tool-group';
+  tools: ToolEvent[];
+  id: string;
+}
+
+export type CombinedChatItem =
+  | { type: 'message'; data: Message; timestamp: Date }
+  | { type: 'tool'; data: ToolEvent; timestamp: Date };
+
+export type GroupedChatItem =
+  | { type: 'message'; data: Message; timestamp: Date }
+  | { type: 'tool-group'; data: ToolEvent[]; timestamp: Date; id: string };

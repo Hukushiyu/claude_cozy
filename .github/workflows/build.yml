@@ -215,9 +215,9 @@ jobs:
               --password "${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}"
           fi
 
-          # Sign app.tar.gz
-          if [ -f "src-tauri/target/aarch64-apple-darwin/release/bundle/Claude Cozy_${VERSION}_aarch64.app.tar.gz" ]; then
-            npx tauri signer sign "src-tauri/target/aarch64-apple-darwin/release/bundle/Claude Cozy_${VERSION}_aarch64.app.tar.gz" \
+          # Sign app.tar.gz (note: filename has dot not space)
+          if [ -f "src-tauri/target/aarch64-apple-darwin/release/bundle/Claude.Cozy_${VERSION}_aarch64.app.tar.gz" ]; then
+            npx tauri signer sign "src-tauri/target/aarch64-apple-darwin/release/bundle/Claude.Cozy_${VERSION}_aarch64.app.tar.gz" \
               --private-key-path "$KEY_FILE" \
               --password "${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}"
           fi

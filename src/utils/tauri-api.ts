@@ -97,6 +97,10 @@ export const tauriAPI = {
     return await invoke<DisplayMessage[]>('load_current_session', { projectPath });
   },
 
+  deleteSession: async (projectPath: string, sessionId: string): Promise<string> => {
+    return await invoke<string>('delete_session', { projectPath, sessionId });
+  },
+
   clearHistory: async (projectPath: string): Promise<string> => {
     return await invoke<string>('clear_history', { projectPath });
   },
@@ -198,6 +202,22 @@ export const tauriAPI = {
 
   resetPermissions: async (): Promise<void> => {
     await invoke('reset_permissions');
+  },
+
+  sendPermissionResponse: async (
+    requestId: string,
+    approved: boolean,
+    updatedPermissions?: any
+  ): Promise<void> => {
+    await invoke('send_permission_response', {
+      requestId,
+      approved,
+      updatedPermissions: updatedPermissions || null
+    });
+  },
+
+  approveSession: async (): Promise<void> => {
+    await invoke('approve_session');
   },
 
   onPermissionRequest: async (callback: () => void): Promise<UnlistenFn> => {

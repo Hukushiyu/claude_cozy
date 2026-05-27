@@ -26,6 +26,7 @@ interface ChatStore {
   setThinkingStatus: (status: string | null) => void;
   setError: (error: string) => void;
   loadHistory: () => Promise<void>;
+  loadSessionById: (sessionId: string) => Promise<void>;
   clearHistory: () => Promise<void>;
   clearError: () => void;
 }
@@ -352,6 +353,59 @@ export const useChatStore = create<ChatStore>((set, get) => ({
       console.error('[chatStore] Failed to load history:', error);
       set({
         error: error instanceof Error ? error.message : 'Failed to load history'
+      });
+    }
+  },
+
+  loadSessionById: async (sessionId: string) => {
+    const projectPath = useProjectStore.getState().projectPath;
+
+    if (!projectPath) {
+      console.log('[chatStore] No project selected, skipping session load');
+      return;
+    }
+
+    try {
+      console.log(`[chatStore] Loading session: ${sessionId}`);
+      const displayMessages = await tauriAPI.loadSession(projectPath, sessionId);
+
+      if (displayMessages && displayMessages.length > 0) {
+        // Convert DisplayMessage[] to Message[]
+        const messages = displayMessages.map(msg => ({
+          id: msg.id,
+          role: msg.role as 'user' | 'assistant',
+          content: msg.content,
+          timestamp: new Date(msg.timestamp)
+        }));
+
+        set({
+          messages,
+          toolEvents: [],
+          error: null,
+          isLoading: false,
+          isThinking: false,
+          thinkingStatus: null,
+          streamingMessage: null,
+          thinkingClearTimeout: null
+        });
+
+        console.log(`[chatStore] Loaded ${messages.length} messages from session ${sessionId}`);
+      } else {
+        console.log(`[chatStore] Session ${sessionId} is empty`);
+        set({
+          messages: [],
+          toolEvents: [],
+          isLoading: false,
+          isThinking: false,
+          thinkingStatus: null,
+          streamingMessage: null,
+          thinkingClearTimeout: null
+        });
+      }
+    } catch (error) {
+      console.error('[chatStore] Failed to load session:', error);
+      set({
+        error: error instanceof Error ? error.message : 'Failed to load session'
       });
     }
   },

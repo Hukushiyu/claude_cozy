@@ -1,150 +1,136 @@
-import { useState, useEffect } from 'react';
-import { tauriAPI } from '../../utils/tauri-api';
-import type { UnlistenFn } from '@tauri-apps/api/event';
-import { ask } from '@tauri-apps/plugin-dialog';
+import { useState, useEffect, useRef } from 'react';
+import type { PermissionMode } from '../../types/permissions';
+import { PERMISSION_MODE_DISPLAYS } from '../../types/permissions';
 
 export function PermissionStatusButton() {
-  const [permissionsApproved, setPermissionsApproved] = useState(false);
+  const [permissionMode, setPermissionModeState] = useState<PermissionMode>(
+    (localStorage.getItem('permissionMode') as PermissionMode) || 'acceptEdits'
+  );
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
+  const setPermissionMode = (mode: PermissionMode) => {
+    setPermissionModeState(mode);
+    localStorage.setItem('permissionMode', mode);
+    console.log('[PermissionStatusButton] Permission mode set to:', mode);
+    setIsDropdownOpen(false);
+  };
+
+  // Close dropdown when clicking outside
   useEffect(() => {
-    // Clear any old localStorage keys from previous versions
-    localStorage.removeItem('toolPermissionsApproved');
-
-    // Check localStorage ONLY for manual approval setting
-    const syncPermissionState = async () => {
-      const stored = localStorage.getItem('manualPermissionApproval');
-      const manuallyApproved = stored === 'true';
-
-      console.log('[PermissionStatusButton] Stored manual approval:', stored);
-      console.log('[PermissionStatusButton] Manual approval flag:', manuallyApproved);
-
-      if (manuallyApproved) {
-        // User manually approved via button - restore that state
-        console.log('[PermissionStatusButton] Restoring manual approval state');
-        await tauriAPI.approvePermissions(false); // persistent approval
-        setPermissionsApproved(true);
-      } else {
-        // Default to NOT approved
-        console.log('[PermissionStatusButton] Defaulting to NOT approved');
-        await tauriAPI.resetPermissions();
-        setPermissionsApproved(false);
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
       }
     };
 
-    syncPermissionState();
-
-    let unlistenApproval: UnlistenFn | null = null;
-    let unlistenReset: UnlistenFn | null = null;
-
-    // Listen for custom approval event from ChatInterface
-    const handleTemporaryApproval = () => {
-      console.log('[PermissionStatusButton] Temporary approval event received');
-      setPermissionsApproved(true);
-    };
-
-    window.addEventListener('permissions-approved-temporarily', handleTemporaryApproval);
-
-    // Listen for permission changes
-    const setupListeners = async () => {
-      unlistenApproval = await tauriAPI.onPermissionRequest(() => {
-        // This fires when permission is REQUESTED (before approval)
-        // Don't change button state here
-        console.log('[PermissionStatusButton] Permission requested');
-      });
-
-      unlistenReset = await tauriAPI.onPermissionReset(() => {
-        console.log('[PermissionStatusButton] Permission reset event');
-        setPermissionsApproved(false);
-      });
-    };
-
-    setupListeners();
-
-    // Don't poll - rely on event listeners and manual state management
-    // The polling was causing the button to flip back
+    if (isDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
 
     return () => {
-      window.removeEventListener('permissions-approved-temporarily', handleTemporaryApproval);
-      if (unlistenApproval) unlistenApproval();
-      if (unlistenReset) unlistenReset();
+      document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, []);
+  }, [isDropdownOpen]);
 
-  const handleReset = async () => {
-    const confirmed = await ask(
-      'You will be prompted to approve tools again on the next request.',
-      {
-        title: 'Reset tool permissions?',
-        kind: 'warning',
-        okLabel: 'Reset',
-        cancelLabel: 'Cancel'
-      }
-    );
+  const currentDisplay = PERMISSION_MODE_DISPLAYS[permissionMode];
 
-    if (confirmed) {
-      try {
-        console.log('[PermissionStatusButton] User confirmed reset');
-        await tauriAPI.resetPermissions();
-        localStorage.removeItem('manualPermissionApproval'); // Remove manual approval flag
-        console.log('[PermissionStatusButton] Removed manualPermissionApproval from localStorage');
-        setPermissionsApproved(false);
-      } catch (error) {
-        console.error('Failed to reset permissions:', error);
-        await ask('Failed to reset permissions. Please try again.', {
-          title: 'Error',
-          kind: 'error',
-          okLabel: 'OK'
-        });
-      }
-    }
+  // Color mapping based on mode
+  const getColorStyle = (mode: PermissionMode) => {
+    const colorMap = {
+      default: { bg: 'rgba(156, 163, 175, 0.1)', border: 'rgb(156, 163, 175)', text: 'rgb(107, 114, 128)' },
+      acceptEdits: { bg: 'rgba(59, 130, 246, 0.1)', border: 'rgb(59, 130, 246)', text: 'rgb(29, 78, 216)' },
+      bypassPermissions: { bg: 'rgba(245, 158, 11, 0.1)', border: 'rgb(245, 158, 11)', text: 'rgb(180, 83, 9)' },
+      plan: { bg: 'rgba(168, 85, 247, 0.1)', border: 'rgb(168, 85, 247)', text: 'rgb(126, 34, 206)' },
+      auto: { bg: 'rgba(20, 184, 166, 0.1)', border: 'rgb(20, 184, 166)', text: 'rgb(13, 148, 136)' },
+      dontAsk: { bg: 'rgba(239, 68, 68, 0.1)', border: 'rgb(239, 68, 68)', text: 'rgb(185, 28, 28)' },
+    };
+    return colorMap[mode];
   };
 
-  const handleManualApprove = async () => {
-    // User manually clicked to approve - persist this choice
-    try {
-      console.log('[PermissionStatusButton] User manually approved via button');
-      await tauriAPI.approvePermissions(false); // temporary = false (persistent approval)
-      localStorage.setItem('manualPermissionApproval', 'true');
-      console.log('[PermissionStatusButton] Saved manualPermissionApproval=true to localStorage');
-      setPermissionsApproved(true);
-    } catch (error) {
-      console.error('Failed to approve permissions:', error);
-    }
-  };
+  const currentColor = getColorStyle(permissionMode);
 
   return (
-    <button
-      onClick={permissionsApproved ? handleReset : handleManualApprove}
-      disabled={false}
-      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition-all text-xs font-medium"
-      style={{
-        backgroundColor: permissionsApproved ? 'rgba(34, 197, 94, 0.1)' : 'rgba(156, 163, 175, 0.1)',
-        borderColor: permissionsApproved ? 'rgb(34, 197, 94)' : 'rgb(156, 163, 175)',
-        color: permissionsApproved ? 'rgb(21, 128, 61)' : 'rgb(107, 114, 128)'
-      }}
-      onMouseEnter={(e) => {
-        if (permissionsApproved) {
-          e.currentTarget.style.backgroundColor = 'rgba(34, 197, 94, 0.15)';
-        }
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.backgroundColor = permissionsApproved ? 'rgba(34, 197, 94, 0.1)' : 'rgba(156, 163, 175, 0.1)';
-      }}
-      title={
-        permissionsApproved
-          ? 'Tools approved - Click to reset and require permission again'
-          : 'Tool permissions not approved yet - You will be prompted when Claude needs to use tools (Read, Write, Edit, Bash, etc.)'
-      }
-    >
-      <div
-        className="w-2 h-2 rounded-full"
+    <div className="relative" ref={dropdownRef}>
+      {/* Main Button */}
+      <button
+        onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition-all text-xs font-medium"
         style={{
-          backgroundColor: permissionsApproved ? 'rgb(34, 197, 94)' : 'rgb(156, 163, 175)'
+          backgroundColor: currentColor.bg,
+          borderColor: currentColor.border,
+          color: currentColor.text
         }}
-      />
-      <span>
-        {permissionsApproved ? 'Tools Approved' : 'Will Prompt'}
-      </span>
-    </button>
+        title={currentDisplay.description}
+      >
+        <span className="text-sm">{currentDisplay.icon}</span>
+        <span>{currentDisplay.text}</span>
+        <svg
+          className="w-3 h-3 ml-1 transition-transform"
+          style={{ transform: isDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      {/* Dropdown Menu */}
+      {isDropdownOpen && (
+        <div
+          className="absolute right-0 mt-2 w-64 rounded-lg border shadow-lg z-50 overflow-hidden"
+          style={{
+            backgroundColor: 'var(--theme-bg)',
+            borderColor: 'var(--theme-border)'
+          }}
+        >
+          <div className="py-1">
+            {(Object.keys(PERMISSION_MODE_DISPLAYS) as PermissionMode[]).map((mode) => {
+              const display = PERMISSION_MODE_DISPLAYS[mode];
+              const isSelected = permissionMode === mode;
+              const modeColor = getColorStyle(mode);
+
+              return (
+                <button
+                  key={mode}
+                  onClick={() => setPermissionMode(mode)}
+                  className="w-full px-4 py-2.5 text-left transition-all flex items-start gap-3"
+                  style={{
+                    backgroundColor: isSelected ? 'var(--theme-hover)' : 'transparent',
+                    borderLeft: isSelected ? `3px solid ${modeColor.border}` : '3px solid transparent'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isSelected) {
+                      e.currentTarget.style.backgroundColor = 'var(--theme-hover)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isSelected) {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                    }
+                  }}
+                >
+                  <span className="text-lg flex-shrink-0">{display.icon}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <span className="font-medium text-sm" style={{ color: 'var(--theme-text)' }}>
+                        {display.text}
+                      </span>
+                      {isSelected && (
+                        <span className="text-xs" style={{ color: modeColor.border }}>✓</span>
+                      )}
+                    </div>
+                    <p className="text-xs leading-tight" style={{ color: 'var(--theme-textSecondary)' }}>
+                      {display.description}
+                    </p>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

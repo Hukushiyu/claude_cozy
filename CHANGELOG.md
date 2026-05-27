@@ -2,6 +2,32 @@
 
 All notable changes to Claude Cozy will be documented in this file.
 
+## [0.7.1] - 2026-05-26
+
+### Added
+- **Session Browser** - Browse, load, and manage conversation sessions
+  - View all past sessions with metadata (date range, message count)
+  - Load any previous session to restore chat history
+  - Delete individual sessions with confirmation
+  - Active session indicator (purple highlight + badge)
+  - "Delete All" button for clearing all sessions (with strong confirmation)
+- **Context compression indicator** - Shows "Compressing conversation context..." when CLI manages context window
+- **Session ID tracking** - App now tracks which session is currently active
+
+### Changed
+- **Removed Clear History button from header** - Moved to Session Browser modal as "Delete All"
+- **Improved session management** - All session operations now in one unified interface
+
+### Fixed
+- **Path encoding for session files** - Correctly handles Windows paths with spaces, dots, and special characters
+- **Session file lookup** - Now properly matches Claude CLI's path encoding algorithm
+
+### Technical
+- Added `list_sessions`, `load_session`, `delete_session` Rust commands
+- Fixed path encoding: spaces, dots, and slashes → dashes, drive letters get `--`
+- Session ID extracted from CLI `system` init events
+- Bidirectional stdio protocol for permission flow (continued from 0.7.0)
+
 ## [0.6.12] - 2026-05-22
 
 ### Fixed

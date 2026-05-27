@@ -2,9 +2,11 @@ use serde::{Deserialize, Serialize};
 use std::process::Stdio;
 use std::sync::{Arc, Mutex};
 use tauri::{AppHandle, Emitter};
-use tokio::io::{AsyncBufReadExt, BufReader};
-use tokio::process::Command as TokioCommand;
+use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader, BufWriter};
+use tokio::process::{Command as TokioCommand, ChildStdin};
+use tokio::sync::Mutex as TokioMutex;
 use crate::commands::cli::find_claude_cli;
+use crate::commands::permissions::PermissionMode;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -20,6 +22,8 @@ lazy_static::lazy_static! {
     static ref PERMISSIONS_APPROVED: Arc<Mutex<bool>> = Arc::new(Mutex::new(false));
     static ref AWAITING_PERMISSION: Arc<Mutex<bool>> = Arc::new(Mutex::new(false));
     static ref TEMPORARY_APPROVAL: Arc<Mutex<bool>> = Arc::new(Mutex::new(false));
+    static ref PERMISSION_MODE: Arc<Mutex<PermissionMode>> = Arc::new(Mutex::new(PermissionMode::AcceptEdits));
+    static ref PROCESS_STDIN: Arc<TokioMutex<Option<BufWriter<ChildStdin>>>> = Arc::new(TokioMutex::new(None));
 }
 
 #[tauri::command]
@@ -40,28 +44,43 @@ pub async fn send_message(
         "--continue".to_string(),
         "--output-format".to_string(),
         "stream-json".to_string(),
+        "--input-format".to_string(),
+        "stream-json".to_string(),
         "--verbose".to_string(),
         "--model".to_string(),
         model.clone(),
     ];
 
-    // Check if permissions are approved
-    let permissions_approved = {
-        let status = PERMISSIONS_APPROVED.lock().unwrap();
-        println!("[CHAT] Reading PERMISSIONS_APPROVED state: {}", *status);
-        *status
+    // Get permission mode - now maps 1:1 with CLI flags
+    let permission_mode_str = {
+        let mode = PERMISSION_MODE.lock().unwrap().clone();
+        println!("[CHAT] Permission mode: {:?}", mode);
+
+        match mode {
+            PermissionMode::Default => "default",
+            PermissionMode::AcceptEdits => "acceptEdits",
+            PermissionMode::BypassPermissions => "bypassPermissions",
+            PermissionMode::Plan => "plan",
+            PermissionMode::Auto => "auto",
+            PermissionMode::DontAsk => "dontAsk",
+        }
     };
 
-    println!("[CHAT] Permissions approved: {}", permissions_approved);
+    println!("[CHAT] Using permission mode: {}", permission_mode_str);
 
-    if permissions_approved {
-        println!("[CHAT] Adding --dangerously-skip-permissions flag");
-        args.push("--dangerously-skip-permissions".to_string());
-    } else {
-        println!("[CHAT] NOT adding --dangerously-skip-permissions flag (will prompt on tool use)");
-    }
+    // Add permission mode flags
+    args.push("--permission-mode".to_string());
+    args.push(permission_mode_str.to_string());
 
-    args.push(message.clone());
+    // Enable stdio-based permission prompts (bidirectional protocol)
+    args.push("--permission-prompt-tool".to_string());
+    args.push("stdio".to_string());
+
+    // Set PERMISSIONS_APPROVED based on mode (for backwards compat with output suppression logic)
+    *PERMISSIONS_APPROVED.lock().unwrap() = permission_mode_str == "bypassPermissions";
+
+    // DO NOT push message as argument when using --input-format stream-json
+    // Message will be sent to stdin after spawn
 
     println!("[CHAT] Command: claude {:?}", args);
 
@@ -72,6 +91,7 @@ pub async fn send_message(
     let mut cmd = TokioCommand::new(&claude_path);
     cmd.args(&args)
         .current_dir(&project_path)
+        .stdin(Stdio::piped())      // NEW: Enable stdin for bidirectional protocol
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
 
@@ -87,10 +107,20 @@ pub async fn send_message(
 
     println!("[CHAT] Process spawned successfully");
 
-    // Get stdout handle BEFORE storing child
+    // Get stdin and stdout handles BEFORE storing child
+    let stdin = child.stdin.take().ok_or_else(|| {
+        println!("[CHAT ERROR] Failed to capture stdin");
+        "Failed to capture stdin".to_string()
+    })?;
+
     let stdout = child.stdout.take().ok_or_else(|| {
         println!("[CHAT ERROR] Failed to capture stdout");
         "Failed to capture stdout".to_string()
+    })?;
+
+    let stderr = child.stderr.take().ok_or_else(|| {
+        println!("[CHAT ERROR] Failed to capture stderr");
+        "Failed to capture stderr".to_string()
     })?;
 
     // Store process reference
@@ -98,8 +128,67 @@ pub async fn send_message(
         let mut process = CLAUDE_PROCESS.lock().unwrap();
         *process = Some(child);
     }
+
+    // Store stdin writer for sending control responses (using async lock)
+    {
+        let mut stdin_writer = PROCESS_STDIN.lock().await;
+        *stdin_writer = Some(BufWriter::new(stdin));
+        println!("[CHAT] stdin writer stored for bidirectional communication");
+    }
+
+    // Send initial user message to stdin (required for --input-format stream-json)
+    {
+        use uuid::Uuid;
+        let user_uuid = Uuid::new_v4().to_string();
+        let payload = serde_json::json!({
+            "type": "user",
+            "uuid": user_uuid,
+            "message": {
+                "role": "user",
+                "content": message
+            }
+        });
+
+        let mut line = serde_json::to_string(&payload).map_err(|e| {
+            let error = format!("Failed to serialize user message: {}", e);
+            println!("[CHAT ERROR] {}", error);
+            error
+        })?;
+        line.push('\n');
+
+        println!("[CHAT] Writing user message to stdin: {}", &line.trim());
+
+        let mut stdin_opt = PROCESS_STDIN.lock().await;
+        if let Some(stdin_writer) = stdin_opt.as_mut() {
+            stdin_writer.write_all(line.as_bytes()).await.map_err(|e| {
+                let error = format!("Failed to write user message to stdin: {}", e);
+                println!("[CHAT ERROR] {}", error);
+                error
+            })?;
+            stdin_writer.flush().await.map_err(|e| {
+                let error = format!("Failed to flush stdin after user message: {}", e);
+                println!("[CHAT ERROR] {}", error);
+                error
+            })?;
+            println!("[CHAT] User message sent to stdin successfully");
+        } else {
+            let error = "stdin writer not available after storing";
+            println!("[CHAT ERROR] {}", error);
+            return Err(error.to_string());
+        }
+    }
+
     let reader = BufReader::new(stdout);
     let mut lines = reader.lines();
+
+    // Spawn a task to read stderr and log it
+    let stderr_reader = BufReader::new(stderr);
+    let mut stderr_lines = stderr_reader.lines();
+    tokio::spawn(async move {
+        while let Ok(Some(line)) = stderr_lines.next_line().await {
+            println!("[CHAT STDERR] {}", line);
+        }
+    });
 
     // Process streaming output
     println!("[CHAT] Starting to read output lines...");
@@ -113,42 +202,61 @@ pub async fn send_message(
             if let Some(event_type) = event.get("type").and_then(|t| t.as_str()) {
                 println!("[CHAT] Event type: {}", event_type);
                 match event_type {
+                    "control_request" => {
+                        // CLI is requesting permission via stdio protocol
+                        if let Some(request_obj) = event.get("request") {
+                            if let Some(subtype) = request_obj.get("subtype").and_then(|s| s.as_str()) {
+                                if subtype == "can_use_tool" {
+                                    println!("[CHAT] Received can_use_tool control_request from CLI");
+
+                                    let request_id = event.get("request_id")
+                                        .and_then(|id| id.as_str())
+                                        .unwrap_or("unknown")
+                                        .to_string();
+
+                                    let tool_name = request_obj.get("tool_name")
+                                        .and_then(|n| n.as_str())
+                                        .unwrap_or("Unknown");
+
+                                    let tool_input = request_obj.get("input")
+                                        .and_then(|i| serde_json::to_string_pretty(i).ok())
+                                        .unwrap_or_else(|| "{}".to_string());
+
+                                    // Emit permission request to frontend
+                                    let permission_data = serde_json::json!({
+                                        "requestId": request_id,
+                                        "toolName": tool_name,
+                                        "input": tool_input,
+                                    });
+
+                                    let _ = app.emit("chat:permission-request", permission_data);
+
+                                    // Set awaiting flag to suppress output until approved
+                                    let mut awaiting = AWAITING_PERMISSION.lock().unwrap();
+                                    *awaiting = true;
+
+                                    println!("[CHAT] Permission request emitted, waiting for user response");
+                                }
+                            }
+                        }
+                    }
                     "assistant" => {
                         // Parse: event.message.content[0]
                         // Content can be text, thinking, or tool_use
                         if let Some(message) = event.get("message") {
                             if let Some(content_array) = message.get("content").and_then(|c| c.as_array()) {
-                                // FIRST PASS: Check if content array contains tool_use that needs permission
-                                let permissions_approved_now = {
-                                    let status = PERMISSIONS_APPROVED.lock().unwrap();
-                                    *status
+                                // Check if we're awaiting permission (set by control_request handler)
+                                let awaiting_permission = {
+                                    let flag = AWAITING_PERMISSION.lock().unwrap();
+                                    *flag
                                 };
-
-                                let mut contains_unpermitted_tool = false;
-                                if !permissions_approved_now {
-                                    for content_item in content_array {
-                                        if let Some(content_type) = content_item.get("type").and_then(|t| t.as_str()) {
-                                            if content_type == "tool_use" {
-                                                contains_unpermitted_tool = true;
-                                                println!("[CHAT] Content array contains tool_use and permissions not approved - will suppress output");
-                                                break;
-                                            }
-                                        }
-                                    }
-                                }
-
-                                // If we found an unpermitted tool, set the flag NOW before processing content
-                                if contains_unpermitted_tool {
-                                    let mut awaiting = AWAITING_PERMISSION.lock().unwrap();
-                                    *awaiting = true;
-                                }
 
                                 // If a previous assistant turn already emitted text and this one
                                 // also has text, finalize the previous bubble first
                                 let this_event_has_text = content_array.iter().any(|item| {
                                     item.get("type").and_then(|t| t.as_str()) == Some("text")
                                 });
-                                if session_emitted_text && this_event_has_text && !contains_unpermitted_tool {
+                                if session_emitted_text && this_event_has_text && !awaiting_permission {
                                     println!("[CHAT] New assistant text turn - emitting turn-complete");
                                     let _ = app.emit("chat:turn-complete", StreamEvent {
                                         event_type: "turn-complete".to_string(),
@@ -187,48 +295,26 @@ pub async fn send_message(
                                                 }
                                             }
                                             "tool_use" => {
-                                                // Tool use detected - check permissions
+                                                // Tool use detected - emit tool event (permission already handled by control_request)
                                                 if let Some(tool_name) = content_item.get("name").and_then(|n| n.as_str()) {
                                                     println!("[CHAT] Tool use detected: {}", tool_name);
 
-                                                    if contains_unpermitted_tool {
-                                                        println!("[CHAT] Permissions not approved - requesting permission");
+                                                    // Check if we're awaiting permission
+                                                    let awaiting = {
+                                                        let flag = AWAITING_PERMISSION.lock().unwrap();
+                                                        *flag
+                                                    };
 
-                                                        let tool_input = content_item.get("input")
-                                                            .and_then(|i| serde_json::to_string_pretty(i).ok())
-                                                            .unwrap_or_else(|| "{}".to_string());
-
-                                                        let permission_data = serde_json::json!({
-                                                            "toolName": tool_name,
-                                                            "input": tool_input
-                                                        });
-
-                                                        let _ = app.emit("chat:permission-request", permission_data);
-
-                                                        // Kill the current process - it will be retried after approval
-                                                        println!("[CHAT] Killing current process (will retry after approval)");
-                                                        let child_option = {
-                                                            let mut process = CLAUDE_PROCESS.lock().unwrap();
-                                                            process.take()
-                                                        };
-
-                                                        if let Some(mut child) = child_option {
-                                                            println!("[CHAT] Waiting for process to terminate...");
-                                                            let _ = child.kill().await;
-                                                            println!("[CHAT] Process terminated");
-                                                        }
-
-                                                        // Exit this function early - process is killed
-                                                        println!("[CHAT] Exiting send_message after permission request");
-                                                        return Ok(());
-                                                    } else {
-                                                        // Permissions approved - emit tool event
+                                                    if !awaiting {
+                                                        // Permissions already approved or CLI handled it - emit tool event
                                                         let _ = app.emit("chat:tool", StreamEvent {
                                                             event_type: "tool_use".to_string(),
                                                             content: None,
                                                             tool_name: Some(tool_name.to_string()),
                                                             thinking_status: None,
                                                         });
+                                                    } else {
+                                                        println!("[CHAT] Suppressing tool event (awaiting permission approval)");
                                                     }
                                                 }
                                             }
@@ -286,7 +372,17 @@ pub async fn send_message(
                         }
                     }
                     "system" => {
-                        // Handle system events (like rate limits)
+                        // Extract session_id from init event
+                        if let Some(subtype) = event.get("subtype").and_then(|s| s.as_str()) {
+                            if subtype == "init" {
+                                if let Some(session_id) = event.get("session_id").and_then(|id| id.as_str()) {
+                                    println!("[CHAT] Session started: {}", session_id);
+                                    let _ = app.emit("chat:session-id", session_id);
+                                }
+                            }
+                        }
+
+                        // Handle system events (like rate limits and context compression)
                         if let Some(message_type) = event.get("message").and_then(|m| m.get("type")).and_then(|t| t.as_str()) {
                             if message_type == "api_retry" {
                                 if let Some(retry) = event.get("message").and_then(|m| m.get("retry_count")).and_then(|r| r.as_u64()) {
@@ -300,6 +396,16 @@ pub async fn send_message(
                                         });
                                     }
                                 }
+                            } else if message_type == "context_compression" || message_type == "compacting" {
+                                // Show compression indicator when CLI is managing context window
+                                let status = "Compressing conversation context...".to_string();
+                                println!("[CHAT] Context compression in progress");
+                                let _ = app.emit("chat:thinking", StreamEvent {
+                                    event_type: "thinking".to_string(),
+                                    content: None,
+                                    tool_name: None,
+                                    thinking_status: Some(status),
+                                });
                             }
                         }
                     }
@@ -404,5 +510,96 @@ pub fn reset_permissions() -> Result<(), String> {
     *temp = false;
 
     println!("[CHAT] Permissions reset successfully");
+    Ok(())
+}
+
+/// Set the permission mode (maps 1:1 to CLI --permission-mode flag)
+#[tauri::command]
+pub fn set_permission_mode(mode: PermissionMode) -> Result<(), String> {
+    println!("[CHAT] set_permission_mode called: {:?}", mode);
+
+    let mut current_mode = PERMISSION_MODE.lock().unwrap();
+    *current_mode = mode;
+
+    println!("[CHAT] Permission mode set successfully");
+    Ok(())
+}
+
+/// Get the current permission mode
+#[tauri::command]
+pub fn get_permission_mode() -> Result<PermissionMode, String> {
+    let mode = PERMISSION_MODE.lock().unwrap().clone();
+    println!("[CHAT] get_permission_mode called, returning: {:?}", mode);
+    Ok(mode)
+}
+
+/// Deprecated: Session approval is now handled by CLI internally
+#[tauri::command]
+pub fn approve_session() -> Result<(), String> {
+    println!("[CHAT] approve_session called (deprecated - CLI handles session approval)");
+    Ok(())
+}
+
+/// Send permission response to Claude CLI via stdin (bidirectional protocol)
+#[tauri::command]
+pub async fn send_permission_response(
+    request_id: String,
+    approved: bool,
+    updated_permissions: Option<serde_json::Value>,
+) -> Result<(), String> {
+    println!("[CHAT] send_permission_response: request_id={}, approved={}", request_id, approved);
+
+    // Build control_response JSON in the format CLI expects
+    // Structure: {"type": "control_response", "response": {"subtype": "success", "request_id": "...", "response": {...}}}
+    // For "allow": response MUST include "updatedInput" (object, not null)
+    // For "deny": response MUST include "message" (string)
+    let response_inner = if approved {
+        serde_json::json!({
+            "behavior": "allow",
+            "updatedInput": updated_permissions.unwrap_or_else(|| serde_json::json!({}))
+        })
+    } else {
+        serde_json::json!({
+            "behavior": "deny",
+            "message": "User denied permission"
+        })
+    };
+
+    let response = serde_json::json!({
+        "type": "control_response",
+        "response": {
+            "subtype": "success",
+            "request_id": request_id,
+            "response": response_inner
+        }
+    });
+
+    // Serialize to JSON string
+    let json_str = serde_json::to_string(&response)
+        .map_err(|e| format!("Failed to serialize control_response: {}", e))?;
+
+    println!("[CHAT] Writing control_response to stdin: {}", json_str);
+
+    // Write to stdin using Tokio mutex (which is Send)
+    let mut stdin_opt = PROCESS_STDIN.lock().await;
+    let stdin = stdin_opt.as_mut()
+        .ok_or_else(|| "No stdin available (process not running)".to_string())?;
+
+    // Write JSON + newline
+    stdin.write_all(json_str.as_bytes()).await
+        .map_err(|e| format!("Failed to write to stdin: {}", e))?;
+    stdin.write_all(b"\n").await
+        .map_err(|e| format!("Failed to write newline to stdin: {}", e))?;
+    stdin.flush().await
+        .map_err(|e| format!("Failed to flush stdin: {}", e))?;
+
+    println!("[CHAT] Control response sent successfully, CLI will continue execution");
+
+    // Clear AWAITING_PERMISSION flag to resume output emission
+    {
+        let mut awaiting = AWAITING_PERMISSION.lock().unwrap();
+        *awaiting = false;
+    }
+
     Ok(())
 }

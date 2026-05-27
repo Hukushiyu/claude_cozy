@@ -5,12 +5,14 @@ import { ApiKeyDialog } from './ApiKeyDialog';
 import { ProjectSelectionModal } from './ProjectSelectionModal';
 import { CommandsModal } from '../help/CommandsModal';
 import { SettingsModal } from '../settings/SettingsModal';
-import { ClearHistoryModal } from './ClearHistoryModal';
+import { SessionBrowser } from '../chat/SessionBrowser';
 import { PermissionStatusButton } from './PermissionStatusButton';
 import { ModelSelector } from './ModelSelector';
 import { useProjectStore } from '../../stores/projectStore';
 import { useSettingsStore } from '../../stores/settingsStore';
+import { useChatStore } from '../../stores/chatStore';
 import { tauriAPI } from '../../utils/tauri-api';
+import type { UnlistenFn } from '@tauri-apps/api/event';
 import { APP_VERSION } from '../../version';
 import { logWithTimestamp } from '../../utils/logger';
 import iconImage from '../../assets/icon.png';
@@ -35,11 +37,13 @@ export function AppShell() {
   const [showProjectModal, setShowProjectModal] = useState(false);
   const [showCommandsModal, setShowCommandsModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
-  const [showClearHistoryModal, setShowClearHistoryModal] = useState(false);
+  const [showSessionBrowser, setShowSessionBrowser] = useState(false);
+  const [currentSessionId, setCurrentSessionId] = useState<string>('');
   const [cliError, setCliError] = useState<string | null>(null);
   const [isVerifyingCli, setIsVerifyingCli] = useState(false);
   const { projectPath, selectProject, isSelectingProject } = useProjectStore();
   const { assistantName, loadSettings } = useSettingsStore();
+  const { loadSessionById } = useChatStore();
 
   // Load settings on mount
   useEffect(() => {
@@ -119,6 +123,25 @@ export function AppShell() {
     // Modal will auto-close via useEffect when projectPath changes
   };
 
+  // Listen for session ID from Claude CLI
+  useEffect(() => {
+    let unlisten: UnlistenFn | null = null;
+
+    const setupListener = async () => {
+      const { listen } = await import('@tauri-apps/api/event');
+      unlisten = await listen<string>('chat:session-id', (event) => {
+        console.log('[AppShell] Session ID received:', event.payload);
+        setCurrentSessionId(event.payload);
+      });
+    };
+
+    setupListener();
+
+    return () => {
+      if (unlisten) unlisten();
+    };
+  }, []);
+
   // Keyboard shortcut for help modal: Ctrl+/ or Cmd+/ (toggles open/closed)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -177,7 +200,18 @@ export function AppShell() {
       {showProjectModal && <ProjectSelectionModal onSelectProject={handleProjectSelect} />}
       <CommandsModal isOpen={showCommandsModal} onClose={() => setShowCommandsModal(false)} />
       <SettingsModal isOpen={showSettingsModal} onClose={() => setShowSettingsModal(false)} />
-      <ClearHistoryModal isOpen={showClearHistoryModal} onClose={() => setShowClearHistoryModal(false)} />
+      <SessionBrowser
+        isOpen={showSessionBrowser}
+        onClose={() => setShowSessionBrowser(false)}
+        projectPath={projectPath || ''}
+        currentSessionId={currentSessionId}
+        onLoadSession={async (sessionId) => {
+          setCurrentSessionId(sessionId);
+          if (sessionId) {
+            await loadSessionById(sessionId);
+          }
+        }}
+      />
 
       {/* CLI Verification Loading Overlay (first launch only) */}
       {isVerifyingCli && (
@@ -338,23 +372,23 @@ export function AppShell() {
 
           <div className="ml-auto flex items-center gap-2 app-no-drag">
             <button
-              onClick={() => setShowClearHistoryModal(true)}
+              onClick={() => setShowSessionBrowser(true)}
               className="px-3 py-1.5 rounded-lg border transition-colors text-xs font-medium flex items-center gap-1.5"
               style={{
-                backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                borderColor: 'rgb(239, 68, 68)',
-                color: 'rgb(185, 28, 28)'
+                backgroundColor: 'rgba(168, 85, 247, 0.1)',
+                borderColor: 'rgb(168, 85, 247)',
+                color: 'rgb(126, 34, 206)'
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.15)';
+                e.currentTarget.style.backgroundColor = 'rgba(168, 85, 247, 0.15)';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.1)';
+                e.currentTarget.style.backgroundColor = 'rgba(168, 85, 247, 0.1)';
               }}
-              title="Clear conversation history"
+              title="Browse and manage sessions"
             >
-              <span>🗑️</span>
-              <span>Clear History</span>
+              <span>📋</span>
+              <span>Sessions</span>
             </button>
 
             <ModelSelector />

@@ -9,6 +9,7 @@ import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 import { ask } from '@tauri-apps/plugin-dialog';
 
 interface PermissionRequest {
+  requestId: string;  // NEW: Required for control_response
   toolName: string;
   input: string;
 }
@@ -27,7 +28,6 @@ export function ChatInterface() {
     appendThought,
     finalizeStream,
     finalizeStreamTurn,
-    discardStream,
     addToolEvent,
     setThinkingStatus,
     setError,
@@ -39,7 +39,6 @@ export function ChatInterface() {
   const inputAreaRef = useRef<InputAreaHandle>(null);
   const [dismissedWarningCount, setDismissedWarningCount] = useState<number>(0);
   const [permissionRequest, setPermissionRequest] = useState<PermissionRequest | null>(null);
-  const [lastMessage, setLastMessage] = useState<string>('');
 
   // Load conversation history when project changes
   useEffect(() => {
@@ -49,10 +48,10 @@ export function ChatInterface() {
     }
   }, [projectPath, loadHistory]);
 
-  // Auto-scroll to bottom when new messages or tool events arrive
+  // Auto-scroll to bottom when new messages, tool events, or permission request arrives
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, toolEvents, streamingMessage]);
+  }, [messages, toolEvents, streamingMessage, permissionRequest]);
 
   // Set up ALL event listeners once on mount
   useEffect(() => {
@@ -153,36 +152,44 @@ export function ChatInterface() {
   // Permission handlers
   const handleApprove = async () => {
     if (permissionRequest) {
-      await tauriAPI.approvePermissions(true); // temporary = true (only for this retry)
-      // Don't persist - modal approval is temporary (session only)
+      console.log('[ChatInterface] Sending permission approval via stdin');
+
+      // Send control_response to CLI via stdin (no restart!)
+      await tauriAPI.sendPermissionResponse(
+        permissionRequest.requestId,
+        true,  // approved
+        null   // updated_permissions (future use)
+      );
+
+      // Clear permission request UI
       setPermissionRequest(null);
 
-      // Emit custom event to notify button that permissions were approved
-      window.dispatchEvent(new CustomEvent('permissions-approved-temporarily'));
-
-      // Discard any partial text from the killed first attempt before retrying
-      discardStream();
-
-      // Retry the last message with permissions approved
-      // Call backend directly without adding another user message bubble
-      if (lastMessage && projectPath) {
-        console.log('[ChatInterface] Retrying message after permission approval');
-        const model = localStorage.getItem('selectedModel') || 'claude-sonnet-4-6';
-        await tauriAPI.sendMessage(lastMessage, projectPath, model, true);
-      }
+      // NO discardStream() - process continues naturally
+      // NO sendMessage() retry - same process resumes
+      console.log('[ChatInterface] Permission approved, CLI process will continue execution');
     }
   };
 
   const handleDeny = async () => {
     if (permissionRequest) {
+      console.log('[ChatInterface] Sending permission denial via stdin');
+
+      // Send control_response with "deny" behavior
+      await tauriAPI.sendPermissionResponse(
+        permissionRequest.requestId,
+        false,  // denied
+        null    // updated_permissions
+      );
+
+      // Clear permission request UI
       setPermissionRequest(null);
-      setError('Permission denied - tools will not execute');
+
+      // CLI will return error to Claude, process continues
+      console.log('[ChatInterface] Permission denied, CLI will return error and continue');
     }
   };
 
-  // Intercept sendMessage to track last message for retry
   const handleSendMessage = async (content: string) => {
-    setLastMessage(content);
     await sendMessage(content);
   };
 
@@ -334,19 +341,21 @@ export function ChatInterface() {
           thinkingStatus={thinkingStatus}
         />
 
+        {/* Permission Request Card - Inline in chat */}
+        {permissionRequest && (
+          <PermissionModal
+            isOpen={true}
+            toolName={permissionRequest.toolName}
+            description={permissionRequest.input}
+            onApprove={handleApprove}
+            onDeny={handleDeny}
+          />
+        )}
+
         <div ref={messagesEndRef} />
       </div>
 
       <InputArea ref={inputAreaRef} onSend={handleSendMessage} disabled={isLoading || !projectPath} />
-
-      {/* Permission Modal */}
-      <PermissionModal
-        isOpen={permissionRequest !== null}
-        toolName={permissionRequest?.toolName || ''}
-        description={permissionRequest?.input || ''}
-        onApprove={handleApprove}
-        onDeny={handleDeny}
-      />
     </div>
   );
 }

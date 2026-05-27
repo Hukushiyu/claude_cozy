@@ -41,18 +41,28 @@ pub struct SessionInfo {
 // Path encoding functions
 
 /// Encodes a project path the same way Claude CLI does
-/// Example: "C:/Users/name/project" → "C--Users-name-project"
+/// Example: "C:\Users\name\project" → "C--Users-name-project"
 fn encode_project_path(path: &str) -> String {
-    // Normalize path separators
-    let normalized = path.replace("\\", "/");
+    let mut result = path.to_string();
 
-    // Replace : with --  (for Windows drive letters)
-    // Replace / with - (path separators)
-    normalized
-        .replace(":", "--")
-        .replace("/", "-")
-        .trim_start_matches('-')
-        .to_string()
+    // First, handle the Windows drive letter special case
+    // Replace "C:\" or "C:/" with "C--" to avoid triple dashes
+    result = result.replace(":\\", "--");
+    result = result.replace(":/", "--");
+
+    // Now handle any remaining colons (shouldn't be any, but just in case)
+    result = result.replace(":", "--");
+
+    // Replace all path separators, spaces, and periods with single dash
+    result = result.replace("\\", "-");
+    result = result.replace("/", "-");
+    result = result.replace(" ", "-");
+    result = result.replace(".", "-");
+
+    // Trim any leading dashes
+    result = result.trim_start_matches('-').to_string();
+
+    result
 }
 
 /// Gets the Claude CLI projects directory (~/.claude/projects)
@@ -133,7 +143,11 @@ fn extract_assistant_text(content: &serde_json::Value) -> String {
 pub fn list_sessions(project_path: String) -> Result<Vec<SessionInfo>, String> {
     let project_dir = get_project_dir(&project_path)?;
 
+    println!("[HISTORY] list_sessions called for: {}", project_path);
+    println!("[HISTORY] Looking in directory: {}", project_dir.display());
+
     if !project_dir.exists() {
+        println!("[HISTORY] Project directory does not exist yet");
         return Ok(Vec::new()); // No sessions yet
     }
 
@@ -154,6 +168,11 @@ pub fn list_sessions(project_path: String) -> Result<Vec<SessionInfo>, String> {
 
     // Sort by last timestamp (most recent first)
     sessions.sort_by(|a, b| b.last_timestamp.cmp(&a.last_timestamp));
+
+    println!("[HISTORY] Found {} session(s)", sessions.len());
+    for session in &sessions {
+        println!("[HISTORY]   - {} ({} messages)", session.session_id, session.message_count);
+    }
 
     Ok(sessions)
 }
@@ -295,6 +314,21 @@ pub async fn clear_history(project_path: String) -> Result<String, String> {
     }
 }
 
+/// Deletes a specific session by ID
+#[tauri::command]
+pub fn delete_session(project_path: String, session_id: String) -> Result<String, String> {
+    let project_dir = get_project_dir(&project_path)?;
+    let session_file = project_dir.join(format!("{}.jsonl", session_id));
+
+    if !session_file.exists() {
+        return Err(format!("Session file not found: {}", session_id));
+    }
+
+    fs::remove_file(&session_file).map_err(|e| format!("Failed to delete session: {}", e))?;
+
+    Ok(format!("Session {} deleted successfully", session_id))
+}
+
 /// Archives current history before clearing
 #[tauri::command]
 pub async fn archive_history(project_path: String, archive_name: String) -> Result<String, String> {
@@ -350,6 +384,11 @@ mod tests {
         assert_eq!(
             encode_project_path("/home/user/project"),
             "home-user-project"
+        );
+        // Test with spaces, dots, and mixed separators (real-world example)
+        assert_eq!(
+            encode_project_path("C:\\Users\\joshua.gates\\Dev Projects\\Claude Terminal Project\\claude-desktop-app\\Tauri Builds"),
+            "C--Users-joshua-gates-Dev-Projects-Claude-Terminal-Project-claude-desktop-app-Tauri-Builds"
         );
     }
 }

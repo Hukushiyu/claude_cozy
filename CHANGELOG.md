@@ -17,16 +17,66 @@ All notable changes to Claude Cozy will be documented in this file.
 ### Changed
 - **Removed Clear History button from header** - Moved to Session Browser modal as "Delete All"
 - **Improved session management** - All session operations now in one unified interface
+- **🚀 MAJOR: Bidirectional stdio protocol for permissions** - Complete architectural overhaul eliminating double execution penalty
 
 ### Fixed
 - **Path encoding for session files** - Correctly handles Windows paths with spaces, dots, and special characters
 - **Session file lookup** - Now properly matches Claude CLI's path encoding algorithm
 
-### Technical
+### Technical - Bidirectional Permission Protocol (Major Architecture Change)
+
+**What Changed:**
+Migrated from kill-and-retry pattern to bidirectional stdio communication with Claude CLI.
+
+**Old Architecture (v0.6.x and earlier):**
+1. Send message → spawn Claude CLI process
+2. CLI encounters tool requiring permission → blocks/hangs
+3. App detects tool_use event → kills process, shows permission modal
+4. User approves → restart CLI with `--dangerously-skip-permissions`
+5. **DOUBLE EXECUTION**: Entire message processed twice
+
+**Problems with old approach:**
+- 50% performance penalty (every permission request = 2x work)
+- Process management complexity (kill, restart, retry)
+- Lost context between executions
+- Race conditions during process termination
+
+**New Architecture (v0.7.1):**
+1. Send message → spawn CLI with `--permission-mode acceptEdits` + `--input-format stream-json`
+2. User message sent to CLI via stdin as JSON
+3. CLI encounters tool → emits `control_request` event to stdout (doesn't block)
+4. App shows permission modal, user approves
+5. App sends `control_response` JSON back to stdin
+6. **SINGLE EXECUTION**: Same process continues naturally
+
+**Benefits:**
+- ✅ Eliminates double execution (2x faster for permission requests)
+- ✅ Single Claude CLI process per message (simpler state management)
+- ✅ Bidirectional communication enables future features
+- ✅ Cleaner logs (no restart noise)
+- ✅ More reliable (no process kill race conditions)
+
+**Implementation Details:**
+- CLI spawned with stdin piped: `.stdin(Stdio::piped())`
+- User messages written to stdin as JSON: `{"type":"user","uuid":"...","message":{...}}`
+- Permission requests received via stdout: `{"type":"control_request","request_id":"...","subtype":"can_use_tool",...}`
+- Responses sent via stdin: `{"type":"control_response","response":{"subtype":"success","request_id":"...","response":{"behavior":"allow",...}}}`
+- Changed from `std::sync::Mutex` to `tokio::sync::Mutex` for async stdin writes
+- 6 permission modes supported: default, acceptEdits, bypassPermissions, plan, auto, dontAsk
+- `acceptEdits` mode as default (auto-approves Read/Write/Edit, prompts for Bash)
+
+**Files Modified:**
+- `src-tauri/src/commands/chat.rs` - Bidirectional stdio, control protocol handlers
+- `src-tauri/src/commands/permissions.rs` - Permission mode enum (1:1 with CLI)
+- `src/types/permissions.ts` - Frontend permission types
+- `src/components/layout/PermissionStatusButton.tsx` - Dropdown picker for modes
+- `src/components/settings/SettingsModal.tsx` - Permission mode settings UI
+
+**Session Management:**
 - Added `list_sessions`, `load_session`, `delete_session` Rust commands
-- Fixed path encoding: spaces, dots, and slashes → dashes, drive letters get `--`
-- Session ID extracted from CLI `system` init events
-- Bidirectional stdio protocol for permission flow (continued from 0.7.0)
+- Fixed path encoding: `C:\Users\name\project` → `C--Users-name-project`
+- Atomic drive letter handling: `:\` → `--` (prevents triple dashes)
+- Session ID extracted from CLI `system` init events and tracked in frontend
 
 ## [0.6.12] - 2026-05-22
 

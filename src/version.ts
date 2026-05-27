@@ -11,4 +11,4 @@ import packageJson from '../package.json';
 export const APP_VERSION = packageJson.version;
 
 // For convenience
-export const GITHUB_REPO = 'Hukushiyu/claude_terminal';
+export const GITHUB_REPO = 'Hukushiyu/claude_cozy';

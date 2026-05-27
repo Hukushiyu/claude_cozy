@@ -104,17 +104,17 @@ While Anthropic's official Claude Code Desktop is packed with advanced features 
 ### Installation
 
 #### Windows
-1. Download `Claude.Cozy_0.6.8_x64-setup.exe` from [Releases](https://github.com/Hukushiyu/claude_terminal/releases)
+1. Download `Claude.Cozy_0.6.8_x64-setup.exe` from [Releases](https://github.com/Hukushiyu/claude_cozy/releases)
 2. Run the installer
 3. Launch "Claude Cozy" from Start Menu
 
 #### macOS (Apple Silicon - M1/M2/M3/M4)
-1. Download `Claude.Cozy_0.6.8_aarch64.dmg` from [Releases](https://github.com/Hukushiyu/claude_terminal/releases)
+1. Download `Claude.Cozy_0.6.8_aarch64.dmg` from [Releases](https://github.com/Hukushiyu/claude_cozy/releases)
 2. Open the DMG and drag Claude Cozy to Applications
 3. Launch from Applications - **No Gatekeeper warning!** ✨ (Signed with Developer ID)
 
 #### macOS (Intel)
-1. Download `Claude.Cozy_0.6.8_x64.dmg` from [Releases](https://github.com/Hukushiyu/claude_terminal/releases)
+1. Download `Claude.Cozy_0.6.8_x64.dmg` from [Releases](https://github.com/Hukushiyu/claude_cozy/releases)
 2. Open the DMG and drag Claude Cozy to Applications
 3. Launch from Applications - **No Gatekeeper warning!** ✨ (Signed with Developer ID)
 
@@ -190,8 +190,8 @@ Use these commands in the chat input:
 
 2. **Clone Repository**
    ```bash
-   git clone https://github.com/Hukushiyu/claude_terminal.git
-   cd claude_terminal
+   git clone https://github.com/Hukushiyu/claude_cozy.git
+   cd claude_cozy
    ```
 
 3. **Install Dependencies**
@@ -270,8 +270,8 @@ MIT License - see [LICENSE](LICENSE) file for details
 
 ## 📞 Support
 
-- **Issues**: [GitHub Issues](https://github.com/Hukushiyu/claude_terminal/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/Hukushiyu/claude_terminal/discussions)
+- **Issues**: [GitHub Issues](https://github.com/Hukushiyu/claude_cozy/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/Hukushiyu/claude_cozy/discussions)
 
 ---
 

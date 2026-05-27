@@ -184,15 +184,15 @@ jobs:
 
           echo "✅ App notarized and stapled successfully"
 
-      - name: Create ZIP from .app bundle
+      - name: Create tar.gz from .app bundle
         run: |
           cd src-tauri/target/aarch64-apple-darwin/release/bundle/macos
 
           # Get version from package.json
           VERSION=$(node -p "require('../../../../../../package.json').version")
 
-          # Create ZIP with dynamic version
-          zip -ry "../Claude.Cozy_${VERSION}_aarch64.app.tar.gz" "Claude Cozy.app"
+          # Create tar.gz (not zip!) for Tauri updater
+          tar -czf "../Claude.Cozy_${VERSION}_aarch64.app.tar.gz" "Claude Cozy.app"
 
           # Note: DMG creation happens automatically by Tauri if configured in tauri.conf.json
 

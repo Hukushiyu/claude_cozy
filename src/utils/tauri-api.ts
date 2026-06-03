@@ -7,6 +7,7 @@ interface StreamEvent {
   content?: string;
   toolName?: string;
   thinkingStatus?: string;
+  toolInput?: Record<string, any>;
 }
 
 export const tauriAPI = {
@@ -84,6 +85,10 @@ export const tauriAPI = {
     await invoke('kill_claude_process');
   },
 
+  setPermissionMode: async (mode: string): Promise<void> => {
+    await invoke('set_permission_mode', { mode });
+  },
+
   // History (CLI-based)
   listSessions: async (projectPath: string): Promise<SessionInfo[]> => {
     return await invoke<SessionInfo[]>('list_sessions', { projectPath });
@@ -142,6 +147,23 @@ export const tauriAPI = {
     }
   },
 
+  // Skills
+  listCustomSkills: async (): Promise<any[]> => {
+    return await invoke<any[]>('list_custom_skills');
+  },
+
+  createCustomSkill: async (skill: any): Promise<void> => {
+    await invoke('create_custom_skill', { skill });
+  },
+
+  updateCustomSkill: async (oldName: string, skill: any): Promise<void> => {
+    await invoke('update_custom_skill', { oldName, skill });
+  },
+
+  deleteCustomSkill: async (name: string): Promise<void> => {
+    await invoke('delete_custom_skill', { name });
+  },
+
   // Event listeners
   onMessageChunk: async (callback: (chunk: string) => void): Promise<UnlistenFn> => {
     return await listen<StreamEvent>('chat:chunk', (event) => {
@@ -183,7 +205,7 @@ export const tauriAPI = {
         callback({
           id: Date.now().toString(),
           toolName: event.payload.toolName,
-          input: {},
+          input: event.payload.toolInput || {},
           status: 'running',
           timestamp: new Date().toISOString()
         });

@@ -1,0 +1,14 @@
+{
+  "version": "v0.7.1",
+  "date": "2026-05-27",
+  "platforms": {
+    "windows-x86_64": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUc3lqYnJ1bnV2Z0dNU285c2d6dEJaNkZ2WnV2Q1o2ejdSWEpYMC9tdUlpdk12TUxoYmFmUWJvUmdSU09Ed1poS3lSd21jRXVyL2hzSDFrYzVFMmh4dVFzTlpOQ29MVlFFPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzc5ODk3NDA0CWZpbGU6Q2xhdWRlIENvenlfMC43LjFfeDY0LXNldHVwLmV4ZQphL08vUHB0b3dkUTZudk9jTi9LNnV6b3VEUk8vcmxLQlVBSEFOTW1QU0FXVm5MSGQzTmNEQThRRGNMK05ZRVh6dVpaOGk4T21vaFJ5YkN3NXBDMWlBdz09Cg==",
+      "url": "https://github.com/Hukushiyu/claude_cozy/releases/download/v0.7.1/Claude.Cozy_0.7.1_x64-setup.exe"
+    },
+    "darwin-aarch64": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUc3lqYnJ1bnV2Z0dmcDkvZTRGM1V3cmVjb0VGaFZhcHErKytwS3BORytZcGN0Y0Erajd3VWF0aTlLYnk3VXViWk56ejBiUnBpTVVrQ3pXUTg2cHZYWG5XRlJ0TnZkd3c4PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzc5ODk3MTc3CWZpbGU6Q2xhdWRlLkNvenlfMC43LjFfYWFyY2g2NC5hcHAudGFyLmd6CkJMbGhYOGVRSmp5SDhLbysxWkxtZWUrbU5sSlpUaWhRVXB1cjFhZGJjRjhtd2oyVm5BNXF2VlBWVkNaRlUvamFHdFdjZGlyWkxoRVd1UjJhTkZqQkNnPT0K",
+      "url": "https://github.com/Hukushiyu/claude_cozy/releases/download/v0.7.1/Claude.Cozy_0.7.1_aarch64.app.tar.gz"
+    }
+  }
+}

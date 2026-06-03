@@ -2,6 +2,77 @@
 
 All notable changes to Claude Cozy will be documented in this file.
 
+## [0.8.0] - 2026-06-02
+
+### 🎉 Major Features
+
+#### Multi-Tab Session System
+- **Up to 6 concurrent tabs** - Work on multiple projects simultaneously
+- **Per-tab state isolation** - Each tab has independent:
+  - Chat history and streaming messages
+  - File tree and file explorer state
+  - Permission mode (Ask/Accept Edits/Auto-Approve)
+  - Model selection (Sonnet/Opus/Haiku)
+  - Session ID and conversation context
+- **Tab management**
+  - Create tab: Click folder icon or Ctrl+T
+  - Close tab: Click × or Ctrl+W
+  - Switch tabs: Click tab or Ctrl+Tab/Ctrl+Shift+Tab
+  - Right-click tab for context menu (Close, Close Others, Close All)
+  - Tabs persist across app restarts
+- **Smart project selector** - Auto-hides when tabs exist, auto-shows when all closed
+- **TabBar component** - VS Code-style tab interface at top of window
+
+#### Sidebar Reorganization
+- **Moved Sessions to sidebar** - Per-tab Session History button (was global header button)
+- **Consolidated controls** - Permissions and Model selector in sidebar above file tree
+- **Per-tab sessions** - Each project's sessions isolated to that tab
+
+### 🐛 Bug Fixes
+
+#### Tool Cards Display Fix
+- **Shows actual tool input** - Tool cards now display file paths, bash commands, and operation details instead of "{}"
+- **Backend enhancement** - Added `tool_input` field to Rust `StreamEvent` struct
+- **Frontend parser** - Properly extracts and displays `input.file_path`, `input.command`, etc.
+
+#### Permission System Overhaul
+- **Fixed permission synchronization** - Permission mode now properly synced between frontend and Rust backend
+- **Tab-aware permissions** - Permission mode syncs on tab create, tab switch, and dropdown change
+- **Backend state management** - `tauriAPI.setPermissionMode()` ensures Rust respects active tab's mode
+
+#### File Explorer Per-Tab Fix
+- **Fixed file tree showing wrong project** - File explorer now updates correctly when switching tabs
+- **Per-tab file tree state** - Each tab maintains separate `fileTreeStates` in `tabStore`
+- **Lazy loading per tab** - File trees load independently for each project
+
+#### Chat Rendering Fix
+- **Fixed infinite render loop** - Changed from multiple Zustand selectors to single selector pattern
+- **Stable subscriptions** - Single `activeTabState` selector prevents unstable function references
+- **Type-safe selectors** - Proper TypeScript annotations prevent implicit `any` errors
+
+### 🔧 Technical Improvements
+
+#### State Architecture
+- **Zustand per-tab pattern** - `Record<tabId, state>` structure for chat and file trees
+- **Single selector optimization** - One subscription per component instead of 7 unstable selectors
+- **Tab context propagation** - All components now tab-aware via `activeTabId`
+
+#### IPC & Backend
+- **Permission mode API** - Added `set_permission_mode` Tauri command
+- **Tool input extraction** - Rust backend extracts and serializes `tool_input` from Claude CLI JSON
+- **Session management** - Backend tracks per-tab session IDs
+
+### 📝 Documentation
+- **Updated MULTI_TAB_SESSION_NOTES.md** - Complete implementation notes and architecture decisions
+- **devLog.log gitignore exception** - Whitelisted dev log for Claude CLI file referencing
+
+### 🎨 UI/UX
+- **Tab visual feedback** - Active tab highlighted, hover states, close button on hover
+- **Empty state handling** - Clear messaging when no tabs exist
+- **Keyboard shortcuts** - Full keyboard navigation for tab operations
+
+---
+
 ## [0.7.1] - 2026-05-26
 
 ### Added

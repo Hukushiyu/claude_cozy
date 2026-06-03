@@ -56,6 +56,10 @@ pub fn run() {
       commands::git::get_git_status,
       commands::cli::check_claude_status,
       commands::cli::open_terminal_for_auth,
+      commands::skills::list_custom_skills,
+      commands::skills::create_custom_skill,
+      commands::skills::update_custom_skill,
+      commands::skills::delete_custom_skill,
     ])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");

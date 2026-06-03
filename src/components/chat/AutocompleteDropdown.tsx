@@ -73,12 +73,36 @@ export function AutocompleteDropdown({
               }}
             >
               {type === 'command' && suggestion.type === 'command' ? (
-                <div className="flex items-center gap-2">
-                  <span className="text-lg flex-shrink-0">{suggestion.icon}</span>
-                  <div className="flex-1 min-w-0">
-                    <div className="font-semibold text-sm truncate">{suggestion.name}</div>
-                    <div className="text-xs text-gray-600 truncate">{suggestion.description}</div>
+                <div className="flex flex-col gap-1">
+                  {/* Icon + Name + Badge Row */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg flex-shrink-0">{suggestion.icon}</span>
+                    <span className="font-semibold text-sm truncate">{suggestion.name}</span>
+                    {suggestion.commandType === 'skill' && (
+                      <span
+                        className="text-xs px-1.5 py-0.5 rounded font-medium"
+                        style={{
+                          backgroundColor: 'var(--theme-accent)',
+                          color: '#fff',
+                          opacity: 0.85
+                        }}
+                      >
+                        SKILL
+                      </span>
+                    )}
                   </div>
+
+                  {/* Description */}
+                  <div className="text-xs text-gray-600 truncate pl-7">
+                    {suggestion.description}
+                  </div>
+
+                  {/* Usage (Skills Only) */}
+                  {suggestion.commandType === 'skill' && suggestion.usage && (
+                    <div className="text-xs font-mono text-gray-500 truncate pl-7 mt-0.5">
+                      {suggestion.usage}
+                    </div>
+                  )}
                 </div>
               ) : suggestion.type === 'file' ? (
                 <div className="flex items-center gap-2">

@@ -1,0 +1,116 @@
+ Download the React DevTools for a better development experience: https://reactjs.org/link/react-devtools
+ [+0ms] [ProjectSelectionModal.tsx] Module loaded
+ [+0ms] [AppShell.tsx] Module loaded
+ [+1ms] [App.tsx] Module loaded
+ [+1ms] [main.tsx] Script execution started
+ [+3ms] [main.tsx] ReactDOM.render called
+ [+8ms] [App] Component function called
+ [+8ms] [App] Render: not ready yet, returning null
+ [+8ms] [App] Component function called
+ [+8ms] [App] Render: not ready yet, returning null
+ [+10ms] [App] useEffect running - starting init
+ [+10ms] [App] About to check for updates
+ [Updater] Skipping check (last checked 3 minutes ago)
+ [+11ms] [App] useEffect running - starting init
+ [+11ms] [App] About to check for updates
+ [Updater] Skipping check (last checked 3 minutes ago)
+ [+11ms] [App] Update check complete
+ [+11ms] [App] Waiting 2499ms to reach 2.5s minimum splash time
+ [+11ms] [App] Update check complete
+ [+11ms] [App] Waiting 2500ms to reach 2.5s minimum splash time
+ [+2510ms] [App] Minimum splash time complete
+ [+2510ms] [App] setIsReady(true) called
+ [+2511ms] [App] Component function called
+ [+2511ms] [App] Render: ready, returning AppShell
+ [+2511ms] [App] Component function called
+ [+2511ms] [App] Render: ready, returning AppShell
+ [+2511ms] [AppShell] Component function called
+ [+2512ms] [AppShell] Component function called
+ [+2519ms] [App] Minimum splash time complete
+ [+2519ms] [App] setIsReady(true) called
+ [InputArea] disabled changed to: true
+ Setting up all chat event listeners
+ [+2550ms] [AppShell] useEffect: loadSettings starting
+ [+2550ms] [AppShell] useEffect: loadSettings complete
+ [+2550ms] [AppShell] Loading custom skills
+ [+2550ms] [AppShell] Loading tabs
+ [TabStore] Loaded 2 tabs from localStorage
+ [+2550ms] [AppShell] CLI already verified, skipping check
+ [AppShell] Tab count changed: 0
+ [AppShell] No tabs - showing project modal
+ Cleaning up all event listeners
+ [InputArea] disabled changed to: true
+ Setting up all chat event listeners
+ [+2552ms] [AppShell] useEffect: loadSettings starting
+ [+2552ms] [AppShell] useEffect: loadSettings complete
+ [+2552ms] [AppShell] Loading custom skills
+ [+2552ms] [AppShell] Loading tabs
+ [TabStore] Loaded 2 tabs from localStorage
+ [+2552ms] [AppShell] CLI already verified, skipping check
+ [AppShell] Tab count changed: 0
+ [AppShell] No tabs - showing project modal
+ [+2552ms] [AppShell] Component function called
+ [+2553ms] [AppShell] Component function called
+ [InputArea] disabled changed to: false
+ [InputArea] Focusing input
+ [ChatInterface] Active tab changed, initializing/loading history
+ [chatStore] Initializing state for tab: tab-1780456361441-9eu2hz7c5
+ [chatStore] Loading conversation history from CLI
+ [AppShell] Tab count changed: 2
+ [AppShell] Have tabs - hiding project modal
+ [+2560ms] [AppShell] Component function called
+ [+2560ms] [AppShell] Component function called
+ [+2562ms] [App] Component function called
+ [+2562ms] [App] Render: ready, returning AppShell
+ [+2562ms] [App] Component function called
+ [+2562ms] [App] Render: ready, returning AppShell
+ [+2563ms] [AppShell] Component function called
+ [+2563ms] [AppShell] Component function called
+ [+2654ms] [AppShell] Component function called
+ [+2654ms] [AppShell] Component function called
+ [chatStore] Loaded 20 messages from CLI history
+ [SkillsStore] Loaded 2 custom skills: Array(2)
+ [+2719ms] [AppShell] Component function called
+ [+2719ms] [AppShell] Component function called
+ [SkillsStore] Loaded 2 custom skills: Array(2)
+ [+2723ms] [AppShell] Component function called
+ [+2723ms] [AppShell] Component function called
+ [ChatInterface] All listeners registered
+ [+2816ms] [App] Removing splash screen element
+ [+2819ms] [App] Removing splash screen element
+ [chatStore] Sending message to Claude CLI
+ [chatStore] Content: okay, let's try that again.
+ [chatStore] Project path: C:\Users\joshua.gates\Downloads
+ [chatStore] Model: claude-sonnet-4-6
+InputArea.tsx:123 [InputArea] disabled changed to: true
+ChatInterface.tsx:148 [ChatInterface] Thought block received: The user says "let's try that again" but I'm not s
+ChatInterface.tsx:103 [ChatInterface] Received chunk: Sure! Try what again — another test document, or s
+chatStore.ts:240 [chatStore] Received chunk: Sure! Try what again — another test document, or s
+ChatInterface.tsx:110 [ChatInterface] Message complete
+chatStore.ts:364 [chatStore] Finalizing stream, message length: 64
+InputArea.tsx:123 [InputArea] disabled changed to: false
+InputArea.tsx:125 [InputArea] Focusing input
+chatStore.ts:210 [chatStore] Sending message to Claude CLI
+chatStore.ts:211 [chatStore] Content: yeah, just a simple text doc would be fine.
+chatStore.ts:212 [chatStore] Project path: C:\Users\joshua.gates\Downloads
+chatStore.ts:213 [chatStore] Model: claude-sonnet-4-6
+InputArea.tsx:123 [InputArea] disabled changed to: true
+ChatInterface.tsx:131 [ChatInterface] Tool event: Object
+ChatInterface.tsx:103 [ChatInterface] Received chunk: Created `toolCardTest4.txt` with the Seven Wonders
+chatStore.ts:240 [chatStore] Received chunk: Created `toolCardTest4.txt` with the Seven Wonders
+ChatInterface.tsx:110 [ChatInterface] Message complete
+chatStore.ts:364 [chatStore] Finalizing stream, message length: 101
+InputArea.tsx:123 [InputArea] disabled changed to: false
+InputArea.tsx:125 [InputArea] Focusing input
+chatStore.ts:210 [chatStore] Sending message to Claude CLI
+chatStore.ts:211 [chatStore] Content: Still not working. Stand by please.
+chatStore.ts:212 [chatStore] Project path: C:\Users\joshua.gates\Downloads
+chatStore.ts:213 [chatStore] Model: claude-sonnet-4-6
+InputArea.tsx:123 [InputArea] disabled changed to: true
+chatStore.ts:217 [chatStore] sendMessage returned successfully
+ChatInterface.tsx:103 [ChatInterface] Received chunk: Standing by — take your time!
+chatStore.ts:240 [chatStore] Received chunk: Standing by — take your time!
+ChatInterface.tsx:110 [ChatInterface] Message complete
+chatStore.ts:364 [chatStore] Finalizing stream, message length: 29
+InputArea.tsx:123 [InputArea] disabled changed to: false
+InputArea.tsx:125 [InputArea] Focusing input

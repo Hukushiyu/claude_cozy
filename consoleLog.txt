@@ -1,0 +1,10 @@
+index-R7lybVyq.js:142 [Updater] Skipping check (last checked 3 minutes ago)
+index-R7lybVyq.js:135 [PermissionStatusButton] Stored manual approval: null
+index-R7lybVyq.js:135 [PermissionStatusButton] Manual approval flag: false
+index-R7lybVyq.js:135 [PermissionStatusButton] Defaulting to NOT approved
+index-R7lybVyq.js:114 [InputArea] disabled changed to: true
+index-R7lybVyq.js:132 Setting up all chat event listeners
+index-R7lybVyq.js:40 selectProject called
+index-R7lybVyq.js:40 Calling tauriAPI.selectProject()
+index-R7lybVyq.js:132 [ChatInterface] All listeners registered
+index-R7lybVyq.js:40 Selected path: null

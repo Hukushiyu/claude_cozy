@@ -1,15 +1,31 @@
-import { useEffect, useState } from 'react';
-import { useProjectStore } from '../../stores/projectStore';
+import { useEffect, useState, useRef } from 'react';
 import { useDragStore } from '../../stores/dragStore';
+import { useSettingsStore } from '../../stores/settingsStore';
+import { useTabStore } from '../../stores/tabStore';
 import { FileNode } from '../../types/ipc';
 import { FilePreviewPanel } from './FilePreviewPanel';
 import { FilePreviewModal } from './FilePreviewModal';
 import { ContextMenu } from './ContextMenu';
+import { SessionBrowser } from '../chat/SessionBrowser';
 import path from 'path-browserify';
 import { tauriAPI } from '../../utils/tauri-api';
+import type { PermissionMode } from '../../types/permissions';
+import { PERMISSION_MODE_DISPLAYS } from '../../types/permissions';
+
+const MODELS = [
+  { id: 'claude-sonnet-4-6', name: 'Sonnet 4.6' },
+  { id: 'claude-opus-4-7', name: 'Opus 4.7' },
+  { id: 'claude-haiku-4-5', name: 'Haiku 4.5' },
+];
 
 export function FileTree() {
-  const { fileTree, projectPath, loadFileTree, isLoadingTree } = useProjectStore();
+  const { selectedModel, setSelectedModel } = useSettingsStore();
+  const { getActiveTab, activeTabId, getActiveFileTreeState, setFileTree, setLoadingTree } = useTabStore();
+  const activeTab = getActiveTab();
+  const projectPath = activeTab?.projectPath || null;
+
+  // Get file tree from active tab
+  const { fileTree, isLoadingTree } = getActiveFileTreeState();
   const [previewFile, setPreviewFile] = useState<{ path: string; name: string } | null>(null);
   const [modalFile, setModalFile] = useState<{ path: string; name: string } | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -20,11 +36,95 @@ export function FileTree() {
     node: FileNode;
   } | null>(null);
 
+  // Permission mode state (per-tab in future)
+  const [permissionMode, setPermissionModeState] = useState<PermissionMode>(
+    (localStorage.getItem('permissionMode') as PermissionMode) || 'acceptEdits'
+  );
+  const [isPermDropdownOpen, setIsPermDropdownOpen] = useState(false);
+  const [isModelDropdownOpen, setIsModelDropdownOpen] = useState(false);
+  const [showSessionBrowser, setShowSessionBrowser] = useState(false);
+  const [currentSessionId, setCurrentSessionId] = useState<string>('');
+  const permDropdownRef = useRef<HTMLDivElement>(null);
+  const modelDropdownRef = useRef<HTMLDivElement>(null);
+
+  const setPermissionMode = async (mode: PermissionMode) => {
+    setPermissionModeState(mode);
+    localStorage.setItem('permissionMode', mode);
+    console.log('[FileTree] Permission mode set to:', mode);
+
+    // Update Rust backend
+    try {
+      await tauriAPI.setPermissionMode(mode);
+      console.log('[FileTree] Backend permission mode updated');
+    } catch (error) {
+      console.error('[FileTree] Failed to set backend permission mode:', error);
+    }
+
+    // Update active tab's permission mode
+    if (activeTabId) {
+      const { updateTab } = useTabStore.getState();
+      updateTab(activeTabId, { permissionMode: mode });
+      console.log('[FileTree] Tab permission mode updated');
+    }
+
+    setIsPermDropdownOpen(false);
+  };
+
+  // Load file tree for active tab
+  const loadFileTree = async () => {
+    if (!activeTabId || !projectPath) return;
+
+    setLoadingTree(activeTabId, true);
+    try {
+      const tree = await tauriAPI.loadFileTree(projectPath);
+      setFileTree(activeTabId, tree);
+    } catch (error) {
+      console.error('[FileTree] Failed to load file tree:', error);
+      setFileTree(activeTabId, []);
+    } finally {
+      setLoadingTree(activeTabId, false);
+    }
+  };
+
   useEffect(() => {
-    if (projectPath) {
+    if (projectPath && activeTabId) {
       loadFileTree();
     }
-  }, [projectPath, loadFileTree]);
+  }, [projectPath, activeTabId]);
+
+  // Close permission dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (permDropdownRef.current && !permDropdownRef.current.contains(event.target as Node)) {
+        setIsPermDropdownOpen(false);
+      }
+    };
+
+    if (isPermDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isPermDropdownOpen]);
+
+  // Close model dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (modelDropdownRef.current && !modelDropdownRef.current.contains(event.target as Node)) {
+        setIsModelDropdownOpen(false);
+      }
+    };
+
+    if (isModelDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isModelDropdownOpen]);
 
   const handleContextMenu = (e: React.MouseEvent, node: FileNode) => {
     e.preventDefault();
@@ -142,8 +242,191 @@ export function FileTree() {
     );
   }
 
+  const currentPermDisplay = PERMISSION_MODE_DISPLAYS[permissionMode];
+  const currentModel = MODELS.find(m => m.id === selectedModel) || MODELS[0];
+
+  // Color mapping for permission modes
+  const getPermColorStyle = (mode: PermissionMode) => {
+    const colorMap = {
+      default: { bg: 'rgba(156, 163, 175, 0.1)', border: 'rgb(156, 163, 175)', text: 'rgb(107, 114, 128)' },
+      acceptEdits: { bg: 'rgba(59, 130, 246, 0.1)', border: 'rgb(59, 130, 246)', text: 'rgb(29, 78, 216)' },
+      bypassPermissions: { bg: 'rgba(245, 158, 11, 0.1)', border: 'rgb(245, 158, 11)', text: 'rgb(180, 83, 9)' },
+      plan: { bg: 'rgba(168, 85, 247, 0.1)', border: 'rgb(168, 85, 247)', text: 'rgb(126, 34, 206)' },
+      auto: { bg: 'rgba(20, 184, 166, 0.1)', border: 'rgb(20, 184, 166)', text: 'rgb(13, 148, 136)' },
+      dontAsk: { bg: 'rgba(239, 68, 68, 0.1)', border: 'rgb(239, 68, 68)', text: 'rgb(185, 28, 28)' },
+    };
+    return colorMap[mode];
+  };
+
+  const currentPermColor = getPermColorStyle(permissionMode);
+
   return (
     <div className="flex flex-col h-full">
+      {/* Tab Controls: Permissions & Model */}
+      <div className="flex-shrink-0 px-2 pt-2 pb-1 border-b" style={{ borderColor: 'var(--theme-border)' }}>
+        {/* Permissions Dropdown */}
+        <div className="relative mb-2" ref={permDropdownRef}>
+          <button
+            onClick={() => setIsPermDropdownOpen(!isPermDropdownOpen)}
+            className="w-full flex items-center justify-between px-2 py-1.5 rounded border text-xs font-medium transition-colors"
+            style={{
+              backgroundColor: currentPermColor.bg,
+              borderColor: currentPermColor.border,
+              color: currentPermColor.text
+            }}
+            title={currentPermDisplay.description}
+          >
+            <div className="flex items-center gap-1.5">
+              <span>{currentPermDisplay.icon}</span>
+              <span>{currentPermDisplay.text}</span>
+            </div>
+            <span className="text-xs" style={{ opacity: 0.6 }}>
+              {isPermDropdownOpen ? '▲' : '▼'}
+            </span>
+          </button>
+
+          {/* Permissions Dropdown Menu */}
+          {isPermDropdownOpen && (
+            <div
+              className="absolute left-0 right-0 mt-1 rounded border shadow-lg z-50 overflow-hidden"
+              style={{
+                backgroundColor: 'var(--theme-bg)',
+                borderColor: 'var(--theme-border)'
+              }}
+            >
+              <div className="py-0.5">
+                {(Object.keys(PERMISSION_MODE_DISPLAYS) as PermissionMode[]).map((mode) => {
+                  const display = PERMISSION_MODE_DISPLAYS[mode];
+                  const isSelected = permissionMode === mode;
+                  const modeColor = getPermColorStyle(mode);
+
+                  return (
+                    <button
+                      key={mode}
+                      onClick={() => setPermissionMode(mode)}
+                      className="w-full px-2 py-1.5 text-left transition-all flex items-start gap-2"
+                      style={{
+                        backgroundColor: isSelected ? 'var(--theme-hover)' : 'transparent',
+                        borderLeft: isSelected ? `3px solid ${modeColor.border}` : '3px solid transparent'
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!isSelected) {
+                          e.currentTarget.style.backgroundColor = 'var(--theme-hover)';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!isSelected) {
+                          e.currentTarget.style.backgroundColor = 'transparent';
+                        }
+                      }}
+                    >
+                      <span className="text-sm flex-shrink-0">{display.icon}</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 mb-0.5">
+                          <span className="font-medium text-xs" style={{ color: 'var(--theme-text)' }}>
+                            {display.text}
+                          </span>
+                          {isSelected && (
+                            <span className="text-xs" style={{ color: modeColor.border }}>✓</span>
+                          )}
+                        </div>
+                        <p className="text-xs leading-tight" style={{ color: 'var(--theme-textSecondary)' }}>
+                          {display.description}
+                        </p>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Model Dropdown */}
+        <div className="relative mb-2" ref={modelDropdownRef}>
+          <button
+            onClick={() => setIsModelDropdownOpen(!isModelDropdownOpen)}
+            className="w-full flex items-center justify-between px-2 py-1.5 rounded border text-xs font-medium transition-colors"
+            style={{
+              backgroundColor: 'var(--theme-bg)',
+              borderColor: 'var(--theme-border)',
+              color: 'var(--theme-text)'
+            }}
+            title="Select Claude model"
+            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--theme-hover)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'var(--theme-bg)'; }}
+          >
+            <div className="flex items-center gap-1.5">
+              <span>🤖</span>
+              <span>{currentModel.name}</span>
+            </div>
+            <span className="text-xs" style={{ opacity: 0.6 }}>
+              {isModelDropdownOpen ? '▲' : '▼'}
+            </span>
+          </button>
+
+          {/* Model Dropdown Menu */}
+          {isModelDropdownOpen && (
+            <div
+              className="absolute left-0 right-0 mt-1 rounded border shadow-lg z-50 overflow-hidden"
+              style={{
+                backgroundColor: 'var(--theme-bg)',
+                borderColor: 'var(--theme-border)'
+              }}
+            >
+              {MODELS.map((model) => (
+                <button
+                  key={model.id}
+                  onClick={() => {
+                    setSelectedModel(model.id);
+                    setIsModelDropdownOpen(false);
+                  }}
+                  className="w-full px-2 py-1.5 text-left transition-colors flex items-center justify-between text-xs"
+                  style={{
+                    backgroundColor: selectedModel === model.id ? 'var(--theme-accent)' : 'var(--theme-bg)',
+                    color: selectedModel === model.id ? 'white' : 'var(--theme-text)'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (selectedModel !== model.id) {
+                      e.currentTarget.style.backgroundColor = 'var(--theme-hover)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (selectedModel !== model.id) {
+                      e.currentTarget.style.backgroundColor = 'var(--theme-bg)';
+                    }
+                  }}
+                >
+                  <span className="font-medium">{model.name}</span>
+                  {selectedModel === model.id && (
+                    <span className="text-xs">✓</span>
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Session History Button */}
+        <div className="relative mb-2">
+          <button
+            onClick={() => setShowSessionBrowser(true)}
+            className="w-full flex items-center justify-center gap-1.5 px-2 py-1.5 rounded border text-xs font-medium transition-colors"
+            style={{
+              backgroundColor: 'rgba(168, 85, 247, 0.1)',
+              borderColor: 'rgb(168, 85, 247)',
+              color: 'rgb(126, 34, 206)'
+            }}
+            title="Browse and manage session history for this project"
+            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(168, 85, 247, 0.15)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'rgba(168, 85, 247, 0.1)'; }}
+          >
+            <span>📋</span>
+            <span>Session History</span>
+          </button>
+        </div>
+      </div>
+
       {/* Fixed Search Header */}
       <div className="flex-shrink-0 p-2 border-b border-gray-300">
         <div className="flex items-center gap-2">
@@ -224,6 +507,20 @@ export function FileTree() {
           onCreateFolder={handleCreateFolder}
           onRename={handleRename}
           onDelete={handleDelete}
+        />
+      )}
+
+      {/* Session Browser Modal */}
+      {showSessionBrowser && projectPath && (
+        <SessionBrowser
+          isOpen={showSessionBrowser}
+          onClose={() => setShowSessionBrowser(false)}
+          projectPath={projectPath}
+          currentSessionId={currentSessionId}
+          onLoadSession={(sessionId: string) => {
+            setCurrentSessionId(sessionId);
+            setShowSessionBrowser(false);
+          }}
         />
       )}
     </div>

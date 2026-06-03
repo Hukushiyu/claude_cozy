@@ -1,8 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useSettingsStore, themes } from '../../stores/settingsStore';
 import { UpdateChecker } from './UpdateChecker';
-import type { PermissionMode } from '../../types/permissions';
-import { PERMISSION_MODE_DISPLAYS } from '../../types/permissions';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -12,15 +10,6 @@ interface SettingsModalProps {
 export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const { currentTheme, assistantName, setTheme, setAssistantName } = useSettingsStore();
   const [nameInput, setNameInput] = useState(assistantName);
-  const [permissionMode, setPermissionModeState] = useState<PermissionMode>(
-    (localStorage.getItem('permissionMode') as PermissionMode) || 'acceptEdits'
-  );
-
-  const setPermissionMode = (mode: PermissionMode) => {
-    setPermissionModeState(mode);
-    localStorage.setItem('permissionMode', mode);
-    console.log('[Settings] Permission mode set to:', mode);
-  };
 
   useEffect(() => {
     if (!isOpen) return;
@@ -115,48 +104,6 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             <p className="text-xs mt-2" style={{ color: 'var(--theme-textSecondary)' }}>
               Current: <span className="font-medium" style={{ color: 'var(--theme-text)' }}>{assistantName}</span>
             </p>
-          </div>
-
-          {/* Permission Mode Section */}
-          <div className="mb-8">
-            <h3 className="text-lg font-semibold mb-3" style={{ color: 'var(--theme-text)' }}>
-              Permission Mode
-            </h3>
-            <p className="text-sm mb-4" style={{ color: 'var(--theme-textSecondary)' }}>
-              Controls how Claude handles tool execution permissions
-            </p>
-
-            <div className="grid grid-cols-2 gap-3">
-              {(Object.keys(PERMISSION_MODE_DISPLAYS) as PermissionMode[]).map((mode) => {
-                const display = PERMISSION_MODE_DISPLAYS[mode];
-                const isSelected = permissionMode === mode;
-
-                return (
-                  <button
-                    key={mode}
-                    onClick={() => setPermissionMode(mode)}
-                    className="p-3 rounded-lg border-2 transition-all text-left"
-                    style={{
-                      borderColor: isSelected ? 'var(--theme-accent)' : 'var(--theme-border)',
-                      backgroundColor: isSelected ? 'var(--theme-hover)' : 'transparent'
-                    }}
-                  >
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-lg">{display.icon}</span>
-                      <span className="font-medium" style={{ color: 'var(--theme-text)' }}>
-                        {display.text}
-                      </span>
-                      {isSelected && (
-                        <span className="ml-auto" style={{ color: 'var(--theme-accent)' }}>✓</span>
-                      )}
-                    </div>
-                    <p className="text-xs" style={{ color: 'var(--theme-textSecondary)' }}>
-                      {display.description}
-                    </p>
-                  </button>
-                );
-              })}
-            </div>
           </div>
 
           {/* Theme Section */}

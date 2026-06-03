@@ -15,6 +15,7 @@ pub struct StreamEvent {
     pub content: Option<String>,
     pub tool_name: Option<String>,
     pub thinking_status: Option<String>,
+    pub tool_input: Option<serde_json::Value>,
 }
 
 lazy_static::lazy_static! {
@@ -263,6 +264,7 @@ pub async fn send_message(
                                         content: None,
                                         tool_name: None,
                                         thinking_status: None,
+                                        tool_input: None,
                                     });
                                     session_emitted_text = false;
                                 }
@@ -289,6 +291,7 @@ pub async fn send_message(
                                                             content: Some(text.to_string()),
                                                             tool_name: None,
                                                             thinking_status: None,
+                                                            tool_input: None,
                                                         });
                                                         session_emitted_text = true;
                                                     }
@@ -298,6 +301,9 @@ pub async fn send_message(
                                                 // Tool use detected - emit tool event (permission already handled by control_request)
                                                 if let Some(tool_name) = content_item.get("name").and_then(|n| n.as_str()) {
                                                     println!("[CHAT] Tool use detected: {}", tool_name);
+
+                                                    // Extract tool input
+                                                    let tool_input = content_item.get("input").cloned();
 
                                                     // Check if we're awaiting permission
                                                     let awaiting = {
@@ -312,6 +318,7 @@ pub async fn send_message(
                                                             content: None,
                                                             tool_name: Some(tool_name.to_string()),
                                                             thinking_status: None,
+                                                            tool_input,
                                                         });
                                                     } else {
                                                         println!("[CHAT] Suppressing tool event (awaiting permission approval)");
@@ -326,6 +333,7 @@ pub async fn send_message(
                                                         content: Some(text.to_string()),
                                                         tool_name: None,
                                                         thinking_status: None,
+                                                        tool_input: None,
                                                     });
                                                 }
                                             }
@@ -345,6 +353,7 @@ pub async fn send_message(
                                 content: None,
                                 tool_name: None,
                                 thinking_status: Some(status.to_string()),
+                                tool_input: None,
                             });
                         }
                     }
@@ -364,6 +373,7 @@ pub async fn send_message(
                                 content: None,
                                 tool_name: None,
                                 thinking_status: None,
+                                tool_input: None,
                             });
 
                             // Note: We do NOT reset temporary approvals here anymore
@@ -393,6 +403,7 @@ pub async fn send_message(
                                             content: None,
                                             tool_name: None,
                                             thinking_status: Some(status),
+                                            tool_input: None,
                                         });
                                     }
                                 }
@@ -405,6 +416,7 @@ pub async fn send_message(
                                     content: None,
                                     tool_name: None,
                                     thinking_status: Some(status),
+                                    tool_input: None,
                                 });
                             }
                         }

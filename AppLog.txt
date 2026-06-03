@@ -1,0 +1,119 @@
+  VITE v6.4.2  ready in 467 ms
+
+  ➜  Local:   http://localhost:1420/
+     Running DevCommand (`cargo  run --no-default-features --color always --`)
+        Info Watching C:\Users\joshua.gates\Dev Projects\Claude Terminal Project\claude-desktop-app\Tauri Builds\src-tauri for changes...
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.01s
+     Running `target\debug\claude-cozy.exe`
+[HISTORY] list_sessions called for: C:\Users\joshua.gates\Downloads
+[HISTORY] Looking in directory: C:\Users\joshua.gates\.claude\projects\C--Users-joshua-gates-Downloads
+[HISTORY] Found 1 session(s)
+[HISTORY]   - 7346d0ce-9cf1-4b11-9421-6f92723b0ea3 (34 messages)
+[CHAT] send_message called
+[CHAT] Message: okay, let's try that again.
+[CHAT] Project path: C:\Users\joshua.gates\Downloads
+[CHAT] Model: claude-sonnet-4-6
+[CHAT] Permission mode: AcceptEdits
+[CHAT] Using permission mode: acceptEdits
+[CHAT] Command: claude ["--continue", "--output-format", "stream-json", "--input-format", "stream-json", "--verbose", "--model", "claude-sonnet-4-6", "--permission-mode", "acceptEdits", "--permission-prompt-tool", "stdio"]
+[CHAT] Using Claude CLI at: claude
+[CHAT] Spawning Claude CLI process...
+[CHAT] Process spawned successfully
+[CHAT] stdin writer stored for bidirectional communication
+[CHAT] Writing user message to stdin: {"message":{"content":"okay, let's try that again.","role":"user"},"type":"user","uuid":"77efca18-19e2-4df7-8ce7-1ed7f02f46cd"}
+[CHAT] User message sent to stdin successfully
+[CHAT] Starting to read output lines...
+[CHAT] Received line 1: {"type":"system","subtype":"init","cwd":"C:\\Users\\joshua.gates\\Downloads","session_id":"7346d0ce-9cf1-4b11-9421-6f92723b0ea3","tools":["Task","AskUserQuestion","Bash","CronCreate","CronDelete","CronList","Edit","EnterPlanMode","EnterWorktree","ExitPlanMode","ExitWorktree","Glob","Grep","LSP","NotebookEdit","Read","ScheduleWakeup","Skill","TaskCreate","TaskGet","TaskList","TaskOutput","TaskStop","TaskUpdate","ToolSearch","WebFetch","Workflow","Write"],"mcp_servers":[{"name":"plugin:github:github","status":"pending"}],"model":"claude-sonnet-4-6","permissionMode":"acceptEdits","slash_commands":["my-test-skill","working-on-skill","deep-research","update-config","verify","debug","code-review","simplify","batch","fewer-permission-prompts","loop","claude-api","run","run-skill-generator","clear","compact","context","heapdump","init","reload-skills","review","security-review","usage","insights","goal","team-onboarding"],"apiKeySource":"none","claude_code_version":"2.1.161","output_style":"default","agents":["claude","Explore","general-purpose","Plan","statusline-setup"],"skills":["my-test-skill","working-on-skill","deep-research","update-config","verify","debug","code-review","simplify","batch","fewer-permission-prompts","loop","claude-api","run","run-skill-generator"],"plugins":[{"name":"github","path":"C:\\Users\\joshua.gates\\.claude\\plugins\\cache\\claude-plugins-official\\github\\unknown","source":"github@claude-plugins-official"},{"name":"rust-analyzer-lsp","path":"C:\\Users\\joshua.gates\\.claude\\plugins\\cache\\claude-plugins-official\\rust-analyzer-lsp\\1.0.0","source":"rust-analyzer-lsp@claude-plugins-official"}],"analytics_disabled":true,"product_feedback_disabled":false,"uuid":"eacf4f09-6cb2-4006-be63-ec0f89da8329","memory_paths":{"auto":"C:\\Users\\joshua.gates\\.claude\\projects\\C--Users-joshua-gates-Downloads\\memory\\"},"fast_mode_state":"off"}
+[CHAT] Event type: system
+[CHAT] Session started: 7346d0ce-9cf1-4b11-9421-6f92723b0ea3
+[CHAT] Received line 2: {"type":"system","subtype":"thinking_tokens","estimated_tokens":1,"estimated_tokens_delta":1,"uuid":"020302c1-aeba-4f7c-b462-498d27d06800","session_id":"7346d0ce-9cf1-4b11-9421-6f92723b0ea3"}
+[CHAT] Event type: system
+[CHAT] Received line 3: {"type":"system","subtype":"thinking_tokens","estimated_tokens":4,"estimated_tokens_delta":3,"uuid":"1c4dc036-d692-4a5d-b1ad-c50698883148","session_id":"7346d0ce-9cf1-4b11-9421-6f92723b0ea3"}
+[CHAT] Event type: system
+[CHAT] Received line 4: {"type":"system","subtype":"thinking_tokens","estimated_tokens":11,"estimated_tokens_delta":7,"uuid":"3b4f58d2-7fbd-4aad-9c49-0d787aa33219","session_id":"7346d0ce-9cf1-4b11-9421-6f92723b0ea3"}
+[CHAT] Event type: system
+[CHAT] Received line 5: {"type":"system","subtype":"thinking_tokens","estimated_tokens":12,"estimated_tokens_delta":1,"uuid":"24b57cb7-eaa5-4637-8851-e812758292d9","session_id":"7346d0ce-9cf1-4b11-9421-6f92723b0ea3"}
+[CHAT] Event type: system
+[CHAT] Received line 6: {"type":"system","subtype":"thinking_tokens","estimated_tokens":13,"estimated_tokens_delta":1,"uuid":"a4e7f920-a002-4039-a516-8acc7c1e49f9","session_id":"7346d0ce-9cf1-4b11-9421-6f92723b0ea3"}
+[CHAT] Event type: system
+[CHAT] Received line 7: {"type":"system","subtype":"thinking_tokens","estimated_tokens":19,"estimated_tokens_delta":6,"uuid":"4d9a192b-b07c-4b58-b146-85ddbcc95e36","session_id":"7346d0ce-9cf1-4b11-9421-6f92723b0ea3"}
+[CHAT] Event type: system
+[CHAT] Received line 8: {"type":"system","subtype":"thinking_tokens","estimated_tokens":27,"estimated_tokens_delta":8,"uuid":"d06d2bf3-9699-4f9f-aa03-7f5f3f4ecb1f","session_id":"7346d0ce-9cf1-4b11-9421-6f92723b0ea3"}
+[CHAT] Event type: system
+[CHAT] Received line 9: {"type":"system","subtype":"thinking_tokens","estimated_tokens":29,"estimated_tokens_delta":2,"uuid":"b1a89061-4c46-4127-b40f-acea001e71ab","session_id":"7346d0ce-9cf1-4b11-9421-6f92723b0ea3"}
+[CHAT] Event type: system
+[CHAT] Received line 10: {"type":"system","subtype":"thinking_tokens","estimated_tokens":40,"estimated_tokens_delta":11,"uuid":"d750db37-6234-451f-aa54-1bb9caa59638","session_id":"7346d0ce-9cf1-4b11-9421-6f92723b0ea3"}
+[CHAT] Event type: system
+[CHAT] Received line 11: {"type":"system","subtype":"thinking_tokens","estimated_tokens":45,"estimated_tokens_delta":5,"uuid":"5db6c0ef-7255-49ba-8bb1-cf0ac33321fd","session_id":"7346d0ce-9cf1-4b11-9421-6f92723b0ea3"}
+[CHAT] Event type: system
+[CHAT] Received line 12: {"type":"system","subtype":"thinking_tokens","estimated_tokens":53,"estimated_tokens_delta":8,"uuid":"65b457c1-7323-47f5-a086-b9e6e60dfcf7","session_id":"7346d0ce-9cf1-4b11-9421-6f92723b0ea3"}
+[CHAT] Event type: system
+[CHAT] Received line 13: {"type":"system","subtype":"thinking_tokens","estimated_tokens":99,"estimated_tokens_delta":46,"uuid":"9c7ecdf2-5190-4254-8bc8-db2d6cfe27ff","session_id":"7346d0ce-9cf1-4b11-9421-6f92723b0ea3"}
+[CHAT] Event type: system
+[CHAT] Received line 14: {"type":"assistant","message":{"model":"claude-sonnet-4-6","id":"msg_bdrk_01Ft2jrjui9GSLijy47eQWg4","type":"message","role":"assistant","content":[{"type":"thinking","thinking":"The user says \"let's try that again\" but I'm not sure what they're referring to. They might want another test document, or they might be referring to something else. I should ask for clarification.","signature":"EoUDCl0IDhABGAIqQIf2sMY0q3M6OrT3ZzBmFAPRMQiUKbtwFTDTDTO2fQFU1ki9ZYwOyNQ8S5T/BcodVKZisf82X2KOW7n08jet7nIyEWNsYXVkZS1zb25uZXQtNC02OAASDBd32L2uqAGV923e5xoMYcEtR9cYMJNMrLIYIjAPifj3icxdO+27PI2X1e+dZ2yxDuxULyzc40BSz6qyTvSPuFTUgRZVOG6oWqxF658q1QERGrZ89SxnpgPwicPdi8kTHDUv2y5V0kOVKb/uh1GLnLKxWY3ZqoD1ln/HGZBeSgLGnl6kar0ecSx3AJLbRjl+T0oEJezrGcSqeUoQErRuX4THfwEUAexevCUMrAR8oA71swumqr5NWdCs9mBWqGJBiUHhFFlwSu0xEIzWkl+yfx4ffZr5S4Ehnn6rm1+DIxYi20Prpqlkjq3jmx+uKgHhaeKDjfRaB74a+6t4x8LeNRkc0niLZjuiFnZyNO0z7K3CXJDFK0uQVcj+AS4IXJVYDFeN2oAYAQ=="}],"stop_reason":null,"stop_sequence":null,"stop_details":null,"usage":{"input_tokens":3,"cache_creation_input_tokens":35,"cache_read_input_tokens":24639,"cache_creation":{"ephemeral_5m_input_tokens":35,"ephemeral_1h_input_tokens":0},"output_tokens":8},"context_management":null},"parent_tool_use_id":null,"session_id":"7346d0ce-9cf1-4b11-9421-6f92723b0ea3","uuid":"2cafe978-30cc-4da0-a774-76a0d4f90bcb"}
+[CHAT] Event type: assistant
+[CHAT] Emitting thought block (197 chars)
+[CHAT] Received line 15: {"type":"assistant","message":{"model":"claude-sonnet-4-6","id":"msg_bdrk_01Ft2jrjui9GSLijy47eQWg4","type":"message","role":"assistant","content":[{"type":"text","text":"Sure! Try what again — another test document, or something else?"}],"stop_reason":null,"stop_sequence":null,"stop_details":null,"usage":{"input_tokens":3,"cache_creation_input_tokens":35,"cache_read_input_tokens":24639,"cache_creation":{"ephemeral_5m_input_tokens":35,"ephemeral_1h_input_tokens":0},"output_tokens":8},"context_management":null},"parent_tool_use_id":null,"session_id":"7346d0ce-9cf1-4b11-9421-6f92723b0ea3","uuid":"1fd207d1-118e-4510-b89c-d371a5b07cee"}
+[CHAT] Event type: assistant
+[CHAT] Emitting text chunk: Sure! Try what again — another test document, or
+[CHAT] Received line 16: {"type":"result","subtype":"success","is_error":false,"api_error_status":null,"duration_ms":3007,"duration_api_ms":2970,"ttft_ms":2571,"num_turns":1,"result":"Sure! Try what again — another test document, or something else?","stop_reason":"end_turn","session_id":"7346d0ce-9cf1-4b11-9421-6f92723b0ea3","total_cost_usd":0.00867195,"usage":{"input_tokens":3,"cache_creation_input_tokens":35,"cache_read_input_tokens":24639,"output_tokens":76,"server_tool_use":{"web_search_requests":0,"web_fetch_requests":0},"service_tier":"standard","cache_creation":{"ephemeral_1h_input_tokens":0,"ephemeral_5m_input_tokens":35},"inference_geo":"","iterations":[],"speed":"standard"},"modelUsage":{"claude-sonnet-4-6":{"inputTokens":3,"outputTokens":76,"cacheReadInputTokens":24639,"cacheCreationInputTokens":35,"webSearchRequests":0,"costUSD":0.00867195,"contextWindow":200000,"maxOutputTokens":32000}},"permission_denials":[],"terminal_reason":"completed","fast_mode_state":"off","uuid":"043f90ee-9869-46dc-8ef7-8975c500711a"}
+[CHAT] Event type: result
+[CHAT] Emitting result event
+[CHAT] send_message called
+[CHAT] Message: yeah, just a simple text doc would be fine.
+[CHAT] Project path: C:\Users\joshua.gates\Downloads
+[CHAT] Model: claude-sonnet-4-6
+[CHAT] Permission mode: AcceptEdits
+[CHAT] Using permission mode: acceptEdits
+[CHAT] Command: claude ["--continue", "--output-format", "stream-json", "--input-format", "stream-json", "--verbose", "--model", "claude-sonnet-4-6", "--permission-mode", "acceptEdits", "--permission-prompt-tool", "stdio"]
+[CHAT] Using Claude CLI at: claude
+[CHAT] Spawning Claude CLI process...
+[CHAT] Process spawned successfully
+[CHAT] stdin writer stored for bidirectional communication
+[CHAT] Writing user message to stdin: {"message":{"content":"yeah, just a simple text doc would be fine.","role":"user"},"type":"user","uuid":"a9c6b94c-710e-4c1b-bded-6967314994db"}
+[CHAT] User message sent to stdin successfully
+[CHAT] Starting to read output lines...
+[CHAT] Finished reading output. Total lines: 16
+[CHAT] Waiting for process to complete...
+[CHAT] Received line 1: {"type":"system","subtype":"init","cwd":"C:\\Users\\joshua.gates\\Downloads","session_id":"7346d0ce-9cf1-4b11-9421-6f92723b0ea3","tools":["Task","AskUserQuestion","Bash","CronCreate","CronDelete","CronList","Edit","EnterPlanMode","EnterWorktree","ExitPlanMode","ExitWorktree","Glob","Grep","LSP","NotebookEdit","Read","ScheduleWakeup","Skill","TaskCreate","TaskGet","TaskList","TaskOutput","TaskStop","TaskUpdate","ToolSearch","WebFetch","Workflow","Write"],"mcp_servers":[{"name":"plugin:github:github","status":"pending"}],"model":"claude-sonnet-4-6","permissionMode":"acceptEdits","slash_commands":["my-test-skill","working-on-skill","deep-research","update-config","verify","debug","code-review","simplify","batch","fewer-permission-prompts","loop","claude-api","run","run-skill-generator","clear","compact","context","heapdump","init","reload-skills","review","security-review","usage","insights","goal","team-onboarding"],"apiKeySource":"none","claude_code_version":"2.1.161","output_style":"default","agents":["claude","Explore","general-purpose","Plan","statusline-setup"],"skills":["my-test-skill","working-on-skill","deep-research","update-config","verify","debug","code-review","simplify","batch","fewer-permission-prompts","loop","claude-api","run","run-skill-generator"],"plugins":[{"name":"github","path":"C:\\Users\\joshua.gates\\.claude\\plugins\\cache\\claude-plugins-official\\github\\unknown","source":"github@claude-plugins-official"},{"name":"rust-analyzer-lsp","path":"C:\\Users\\joshua.gates\\.claude\\plugins\\cache\\claude-plugins-official\\rust-analyzer-lsp\\1.0.0","source":"rust-analyzer-lsp@claude-plugins-official"}],"analytics_disabled":true,"product_feedback_disabled":false,"uuid":"792ade9c-58dc-4e3d-816b-d12a2244521e","memory_paths":{"auto":"C:\\Users\\joshua.gates\\.claude\\projects\\C--Users-joshua-gates-Downloads\\memory\\"},"fast_mode_state":"off"}
+[CHAT] Event type: system
+[CHAT] Session started: 7346d0ce-9cf1-4b11-9421-6f92723b0ea3
+[CHAT] Received line 2: {"type":"assistant","message":{"model":"claude-sonnet-4-6","id":"msg_bdrk_01KSurEYM5CtBhdJ9SGqJ9SW","type":"message","role":"assistant","content":[{"type":"tool_use","id":"toolu_bdrk_01PziXJvdbCbWBw43YAsZpwQ","name":"Write","input":{"file_path":"C:\\Users\\joshua.gates\\Downloads\\toolCardTest4.txt","content":"Seven Wonders of the Ancient World\n\n1. The Great Pyramid of Giza — the only one still standing today, located in Egypt.\n2. The Hanging Gardens of Babylon — legendary terraced gardens said to be in ancient Iraq.\n3. The Statue of Zeus at Olympia — a massive gold and ivory sculpture in Greece.\n4. The Temple of Artemis at Ephesus — a grand temple in ancient Turkey.\n5. The Mausoleum at Halicarnassus — an elaborate tomb in present-day Turkey.\n6. The Colossus of Rhodes — a giant statue straddling the harbor of Rhodes, Greece.\n7. The Lighthouse of Alexandria — a towering lighthouse on the island of Pharos, Egypt."}}],"stop_reason":null,"stop_sequence":null,"stop_details":null,"usage":{"input_tokens":3,"cache_creation_input_tokens":90,"cache_read_input_tokens":24674,"cache_creation":{"ephemeral_5m_input_tokens":90,"ephemeral_1h_input_tokens":0},"output_tokens":5},"context_management":null},"parent_tool_use_id":null,"session_id":"7346d0ce-9cf1-4b11-9421-6f92723b0ea3","uuid":"154123a1-802f-435b-8142-7b310d3ff6fc"}
+[CHAT] Event type: assistant
+[CHAT] Tool use detected: Write
+[CHAT] Received line 3: {"type":"user","message":{"role":"user","content":[{"tool_use_id":"toolu_bdrk_01PziXJvdbCbWBw43YAsZpwQ","type":"tool_result","content":"File created successfully at: C:\\Users\\joshua.gates\\Downloads\\toolCardTest4.txt (file state is current in your context — no need to Read it back)"}]},"parent_tool_use_id":null,"session_id":"7346d0ce-9cf1-4b11-9421-6f92723b0ea3","uuid":"4590259f-6e57-4130-bb20-1a5f058691c0","timestamp":"2026-06-03T03:28:05.815Z","tool_use_result":{"type":"create","filePath":"C:\\Users\\joshua.gates\\Downloads\\toolCardTest4.txt","content":"Seven Wonders of the Ancient World\n\n1. The Great Pyramid of Giza — the only one still standing today, located in Egypt.\n2. The Hanging Gardens of Babylon — legendary terraced gardens said to be in ancient Iraq.\n3. The Statue of Zeus at Olympia — a massive gold and ivory sculpture in Greece.\n4. The Temple of Artemis at Ephesus — a grand temple in ancient Turkey.\n5. The Mausoleum at Halicarnassus — an elaborate tomb in present-day Turkey.\n6. The Colossus of Rhodes — a giant statue straddling the harbor of Rhodes, Greece.\n7. The Lighthouse of Alexandria — a towering lighthouse on the island of Pharos, Egypt.","structuredPatch":[],"originalFile":null,"userModified":false}}
+[CHAT] Event type: user
+[CHAT] Unknown event type: user
+[CHAT] Received line 4: {"type":"assistant","message":{"model":"claude-sonnet-4-6","id":"msg_bdrk_012J8eS9oGLdVPbFYW27Ss8g","type":"message","role":"assistant","content":[{"type":"text","text":"Created `toolCardTest4.txt` with the Seven Wonders of the Ancient World. How's the tool card looking?"}],"stop_reason":null,"stop_sequence":null,"stop_details":null,"usage":{"input_tokens":1,"cache_creation_input_tokens":304,"cache_read_input_tokens":24764,"cache_creation":{"ephemeral_5m_input_tokens":304,"ephemeral_1h_input_tokens":0},"output_tokens":8},"context_management":null},"parent_tool_use_id":null,"session_id":"7346d0ce-9cf1-4b11-9421-6f92723b0ea3","uuid":"da37d04a-0ef3-4434-8dc2-525b0abd1c46"}
+[CHAT] Event type: assistant
+[CHAT] Emitting text chunk: Created `toolCardTest4.txt` with the Seven Wonders
+[CHAT] Received line 5: {"type":"result","subtype":"success","is_error":false,"api_error_status":null,"duration_ms":6455,"duration_api_ms":6384,"ttft_ms":4729,"num_turns":2,"result":"Created `toolCardTest4.txt` with the Seven Wonders of the Ancient World. How's the tool card looking?","stop_reason":"end_turn","session_id":"7346d0ce-9cf1-4b11-9421-6f92723b0ea3","total_cost_usd":0.020565899999999998,"usage":{"input_tokens":4,"cache_creation_input_tokens":394,"cache_read_input_tokens":49438,"output_tokens":283,"server_tool_use":{"web_search_requests":0,"web_fetch_requests":0},"service_tier":"standard","cache_creation":{"ephemeral_1h_input_tokens":0,"ephemeral_5m_input_tokens":394},"inference_geo":"","iterations":[],"speed":"standard"},"modelUsage":{"claude-sonnet-4-6":{"inputTokens":4,"outputTokens":283,"cacheReadInputTokens":49438,"cacheCreationInputTokens":394,"webSearchRequests":0,"costUSD":0.020565899999999998,"contextWindow":200000,"maxOutputTokens":32000}},"permission_denials":[],"terminal_reason":"completed","fast_mode_state":"off","uuid":"d5505d3f-871c-4362-bc65-15e9e84f20a8"}
+[CHAT] Event type: result
+[CHAT] Emitting result event
+[CHAT] send_message called
+[CHAT] Message: Still not working. Stand by please.
+[CHAT] Project path: C:\Users\joshua.gates\Downloads
+[CHAT] Model: claude-sonnet-4-6
+[CHAT] Permission mode: AcceptEdits
+[CHAT] Using permission mode: acceptEdits
+[CHAT] Command: claude ["--continue", "--output-format", "stream-json", "--input-format", "stream-json", "--verbose", "--model", "claude-sonnet-4-6", "--permission-mode", "acceptEdits", "--permission-prompt-tool", "stdio"]
+[CHAT] Using Claude CLI at: claude
+[CHAT] Spawning Claude CLI process...
+[CHAT] Process spawned successfully
+[CHAT] stdin writer stored for bidirectional communication
+[CHAT] Writing user message to stdin: {"message":{"content":"Still not working. Stand by please.","role":"user"},"type":"user","uuid":"e65a71d4-1dbb-4f4c-abc4-790bc9b60042"}
+[CHAT] User message sent to stdin successfully
+[CHAT] Starting to read output lines...
+[CHAT] Finished reading output. Total lines: 5
+[CHAT] Waiting for process to complete...
+[CHAT] Process exited with status: ExitStatus(ExitStatus(0))
+[CHAT] send_message completed successfully
+[CHAT] Received line 1: {"type":"system","subtype":"init","cwd":"C:\\Users\\joshua.gates\\Downloads","session_id":"7346d0ce-9cf1-4b11-9421-6f92723b0ea3","tools":["Task","AskUserQuestion","Bash","CronCreate","CronDelete","CronList","Edit","EnterPlanMode","EnterWorktree","ExitPlanMode","ExitWorktree","Glob","Grep","LSP","NotebookEdit","Read","ScheduleWakeup","Skill","TaskCreate","TaskGet","TaskList","TaskOutput","TaskStop","TaskUpdate","ToolSearch","WebFetch","Workflow","Write"],"mcp_servers":[{"name":"plugin:github:github","status":"pending"}],"model":"claude-sonnet-4-6","permissionMode":"acceptEdits","slash_commands":["my-test-skill","working-on-skill","deep-research","update-config","verify","debug","code-review","simplify","batch","fewer-permission-prompts","loop","claude-api","run","run-skill-generator","clear","compact","context","heapdump","init","reload-skills","review","security-review","usage","insights","goal","team-onboarding"],"apiKeySource":"none","claude_code_version":"2.1.161","output_style":"default","agents":["claude","Explore","general-purpose","Plan","statusline-setup"],"skills":["my-test-skill","working-on-skill","deep-research","update-config","verify","debug","code-review","simplify","batch","fewer-permission-prompts","loop","claude-api","run","run-skill-generator"],"plugins":[{"name":"github","path":"C:\\Users\\joshua.gates\\.claude\\plugins\\cache\\claude-plugins-official\\github\\unknown","source":"github@claude-plugins-official"},{"name":"rust-analyzer-lsp","path":"C:\\Users\\joshua.gates\\.claude\\plugins\\cache\\claude-plugins-official\\rust-analyzer-lsp\\1.0.0","source":"rust-analyzer-lsp@claude-plugins-official"}],"analytics_disabled":true,"product_feedback_disabled":false,"uuid":"17913267-99f8-4f41-afc9-8101c39b0af9","memory_paths":{"auto":"C:\\Users\\joshua.gates\\.claude\\projects\\C--Users-joshua-gates-Downloads\\memory\\"},"fast_mode_state":"off"}
+[CHAT] Event type: system
+[CHAT] Session started: 7346d0ce-9cf1-4b11-9421-6f92723b0ea3
+[CHAT] Received line 2: {"type":"assistant","message":{"model":"claude-sonnet-4-6","id":"msg_bdrk_01RgFiGc8XA8AAZ7hmMosGus","type":"message","role":"assistant","content":[{"type":"text","text":"Standing by — take your time!"}],"stop_reason":null,"stop_sequence":null,"stop_details":null,"usage":{"input_tokens":3,"cache_creation_input_tokens":39,"cache_read_input_tokens":25068,"cache_creation":{"ephemeral_5m_input_tokens":39,"ephemeral_1h_input_tokens":0},"output_tokens":1},"context_management":null},"parent_tool_use_id":null,"session_id":"7346d0ce-9cf1-4b11-9421-6f92723b0ea3","uuid":"5c9c0006-844f-4ae5-8e80-be61b4739306"}
+[CHAT] Event type: assistant
+[CHAT] Emitting text chunk: Standing by — take your time!
+[CHAT] Received line 3: {"type":"result","subtype":"success","is_error":false,"api_error_status":null,"duration_ms":2105,"duration_api_ms":2066,"ttft_ms":2056,"num_turns":1,"result":"Standing by — take your time!","stop_reason":"end_turn","session_id":"7346d0ce-9cf1-4b11-9421-6f92723b0ea3","total_cost_usd":0.00782565,"usage":{"input_tokens":3,"cache_creation_input_tokens":39,"cache_read_input_tokens":25068,"output_tokens":10,"server_tool_use":{"web_search_requests":0,"web_fetch_requests":0},"service_tier":"standard","cache_creation":{"ephemeral_1h_input_tokens":0,"ephemeral_5m_input_tokens":39},"inference_geo":"","iterations":[],"speed":"standard"},"modelUsage":{"claude-sonnet-4-6":{"inputTokens":3,"outputTokens":10,"cacheReadInputTokens":25068,"cacheCreationInputTokens":39,"webSearchRequests":0,"costUSD":0.00782565,"contextWindow":200000,"maxOutputTokens":32000}},"permission_denials":[],"terminal_reason":"completed","fast_mode_state":"off","uuid":"99b76739-57a4-4d8a-96b9-303babee1c60"}
+[CHAT] Event type: result
+[CHAT] Emitting result event

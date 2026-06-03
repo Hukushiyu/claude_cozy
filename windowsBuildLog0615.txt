@@ -1,0 +1,42 @@
+index-DxmAUOZe.js:135 [+0ms] [ProjectSelectionModal.tsx] Module loaded
+index-DxmAUOZe.js:135 [+1ms] [AppShell.tsx] Module loaded
+index-DxmAUOZe.js:135 [+1ms] [App.tsx] Module loaded
+index-DxmAUOZe.js:135 [+1ms] [main.tsx] Script execution started
+index-DxmAUOZe.js:135 [+2ms] [main.tsx] ReactDOM.render called
+index-DxmAUOZe.js:135 [+16ms] [App] Component function called
+index-DxmAUOZe.js:135 [+16ms] [App] Render: not ready yet, returning null
+index-DxmAUOZe.js:135 [+17ms] [App] useEffect running - starting init
+index-DxmAUOZe.js:135 [+17ms] [App] About to check for updates
+index-DxmAUOZe.js:142 [Updater] Skipping check (last checked 3 minutes ago)
+index-DxmAUOZe.js:135 [+18ms] [App] Update check complete
+index-DxmAUOZe.js:135 [+520ms] [App] 500ms delay complete
+index-DxmAUOZe.js:135 [+520ms] [App] setIsReady(true) called
+index-DxmAUOZe.js:135 [+521ms] [App] Component function called
+index-DxmAUOZe.js:135 [+521ms] [App] Render: ready, returning AppShell
+index-DxmAUOZe.js:135 [+521ms] [AppShell] Component function called
+index-DxmAUOZe.js:135 [PermissionStatusButton] Stored manual approval: null
+index-DxmAUOZe.js:135 [PermissionStatusButton] Manual approval flag: false
+index-DxmAUOZe.js:135 [PermissionStatusButton] Defaulting to NOT approved
+index-DxmAUOZe.js:114 [InputArea] disabled changed to: true
+index-DxmAUOZe.js:132 Setting up all chat event listeners
+index-DxmAUOZe.js:135 [+560ms] [AppShell] useEffect: loadSettings starting
+index-DxmAUOZe.js:135 [+560ms] [AppShell] useEffect: loadSettings complete
+index-DxmAUOZe.js:135 [+560ms] [AppShell] useEffect: checkCli starting
+index-DxmAUOZe.js:135 [+560ms] [AppShell] Calling tauriAPI.checkClaudeCli()
+index-DxmAUOZe.js:135 [+560ms] [AppShell] Component function called
+index-DxmAUOZe.js:135 [+567ms] [AppShell] Component function called
+index-DxmAUOZe.js:135 [+567ms] [ProjectSelectionModal] Component function called
+index-DxmAUOZe.js:135 [+567ms] [ProjectSelectionModal] Rendering full welcome mode
+index-DxmAUOZe.js:135 [+568ms] [ProjectSelectionModal] useEffect: checking hideProjectWelcome
+index-DxmAUOZe.js:135 [+568ms] [ProjectSelectionModal] Simple mode: false
+index-DxmAUOZe.js:135 [+828ms] [App] Removing splash screen element
+index-DxmAUOZe.js:135 [+6677ms] [ProjectSelectionModal] Select button clicked
+index-DxmAUOZe.js:40 selectProject called
+index-DxmAUOZe.js:40 Calling tauriAPI.selectProject()
+index-DxmAUOZe.js:135 [+6677ms] [AppShell] Component function called
+index-DxmAUOZe.js:135 [+6677ms] [ProjectSelectionModal] Component function called
+index-DxmAUOZe.js:135 [+6677ms] [ProjectSelectionModal] Rendering full welcome mode
+index-DxmAUOZe.js:135 [+6685ms] [AppShell] checkClaudeCli returned: Object
+index-DxmAUOZe.js:135 [+6686ms] [ProjectSelectionModal] Component function called
+index-DxmAUOZe.js:135 [+6686ms] [ProjectSelectionModal] Rendering full welcome mode
+index-DxmAUOZe.js:132 [ChatInterface] All listeners registered

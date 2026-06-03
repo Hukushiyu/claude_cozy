@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useChatStore } from '../../stores/chatStore';
-import { useProjectStore } from '../../stores/projectStore';
+import { useTabStore } from '../../stores/tabStore';
 import { MessageList } from './MessageList';
 import { InputArea, InputAreaHandle } from './InputArea';
 import { PermissionModal } from './PermissionModal';
@@ -15,15 +15,25 @@ interface PermissionRequest {
 }
 
 export function ChatInterface() {
+  const { activeTabId, getActiveTab } = useTabStore();
+  const activeTab = getActiveTab();
+  const projectPath = activeTab?.projectPath || null;
+
+  // Single selector for entire tab state - more stable than multiple selectors
+  const activeTabState = useChatStore(state => state.tabStates[activeTabId || '']);
+
+  // Destructure with defaults
+  const messages = activeTabState?.messages || [];
+  const toolEvents = activeTabState?.toolEvents || [];
+  const streamingMessage = activeTabState?.streamingMessage || null;
+  const isThinking = activeTabState?.isThinking || false;
+  const thinkingStatus = activeTabState?.thinkingStatus || null;
+  const isLoading = activeTabState?.isLoading || false;
+  const error = activeTabState?.error || null;
+
+  // Get methods (these don't need selectors)
   const {
-    messages,
-    toolEvents,
-    streamingMessage,
-    isThinking,
-    thinkingStatus,
     sendMessage,
-    isLoading,
-    error,
     appendChunk,
     appendThought,
     finalizeStream,
@@ -32,26 +42,44 @@ export function ChatInterface() {
     setThinkingStatus,
     setError,
     clearError,
-    loadHistory
+    loadHistory,
+    stopClaude,
+    initTabState
   } = useChatStore();
-  const { projectPath } = useProjectStore();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputAreaRef = useRef<InputAreaHandle>(null);
   const [dismissedWarningCount, setDismissedWarningCount] = useState<number>(0);
   const [permissionRequest, setPermissionRequest] = useState<PermissionRequest | null>(null);
 
-  // Load conversation history when project changes
+  // Load conversation history when active tab changes
   useEffect(() => {
-    if (projectPath) {
-      console.log('[ChatInterface] Project changed, loading history');
+    if (activeTabId && projectPath) {
+      console.log('[ChatInterface] Active tab changed, initializing/loading history');
+      // Initialize tab state if not exists
+      initTabState(activeTabId);
+      // Load history
       loadHistory();
     }
-  }, [projectPath, loadHistory]);
+  }, [activeTabId, projectPath, initTabState, loadHistory]);
 
   // Auto-scroll to bottom when new messages, tool events, or permission request arrives
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, toolEvents, streamingMessage, permissionRequest]);
+
+  // Escape key handler to stop Claude
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      // Only stop if Claude is thinking/loading and not waiting for permission
+      if (e.key === 'Escape' && (isThinking || isLoading) && !permissionRequest) {
+        console.log('[ChatInterface] Escape pressed - stopping Claude');
+        stopClaude();
+      }
+    };
+
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [isThinking, isLoading, permissionRequest, stopClaude]);
 
   // Set up ALL event listeners once on mount
   useEffect(() => {

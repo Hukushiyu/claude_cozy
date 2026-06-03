@@ -2,7 +2,7 @@
 
 An attractive, lightweight and fun desktop GUI wrapper for the Claude CLI. Built with Tauri for blazing-fast performance and tiny bundle sizes.
 
-![Version](https://img.shields.io/badge/version-0.7.1-blue)
+![Version](https://img.shields.io/badge/version-0.8.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS-lightgrey)
 
@@ -30,6 +30,7 @@ While Anthropic's official Claude Code Desktop is packed with advanced features 
 | **Read/Write/Edit Files** | ✅ Full access | ✅ Full access |
 | **File Tree & Preview** | ✅ Simple & clean | ✅ With file editor |
 | **Beautiful Themes** | ✅ 6 custom themes | ⚠️ Limited |
+| **Multi-Tab Sessions** | ✅ **Up to 6 tabs** | ✅ Unlimited |
 | **App Size** | ✅ **10-15MB** | ❌ 120-150MB |
 | **Memory Usage** | ✅ **Low** | ❌ Higher |
 | **Learning Curve** | ✅ **Minutes** | ⚠️ Steeper |
@@ -37,7 +38,6 @@ While Anthropic's official Claude Code Desktop is packed with advanced features 
 | **Open Source** | ✅ **MIT License** | ❌ Proprietary |
 | | | |
 | **Advanced Features** | | |
-| Multiple Parallel Sessions | ❌ | ✅ |
 | Built-in Terminal | ❌ | ✅ |
 | Computer Use (Screen Control) | ❌ | ✅ |
 | MCP Servers & Plugins | ❌ | ✅ |
@@ -63,17 +63,24 @@ While Anthropic's official Claude Code Desktop is packed with advanced features 
 - **Thinking Indicators** - See Claude's reasoning process with animated status updates
 - **Clean Design** - Distraction-free workspace for productive conversations
 
+### 📑 Multi-Tab Sessions (New in v0.8.0!)
+- **Up to 6 Concurrent Tabs** - Work on multiple projects simultaneously
+- **Per-Tab State Isolation** - Each tab has independent chat history, file tree, permissions, and model
+- **Tab Management** - Create (Ctrl+T), close (Ctrl+W), switch (Ctrl+Tab), right-click for context menu
+- **Smart Project Selector** - Auto-hides when tabs exist, auto-shows when all closed
+- **Tab Persistence** - Tabs restore across app restarts
+
 ### 📁 Smart File Management
-- **File Tree Explorer** - VS Code-style tree with lazy loading
+- **File Tree Explorer** - VS Code-style tree with lazy loading (per-tab)
 - **File Preview** - Syntax highlighting for 20+ languages, image preview support
 - **@ File References** - Easily reference files in your conversations
 - **Git Integration** - Respects .gitignore patterns
 
 ### 🛠️ Full Claude CLI Power
-- **Tool Execution** - Read, Write, Edit files and run Bash commands
-- **Permission System** - Transparent approval flow for file operations
-- **Conversation History** - Auto-save with archive functionality
-- **Model Selector** - Choose between Sonnet 4.6, Opus 4.7, or Haiku 4.5
+- **Tool Execution** - Read, Write, Edit files and run Bash commands with visual cards showing actual operations
+- **Permission System** - Per-tab permission modes (Ask/Accept Edits/Auto-Approve)
+- **Session Management** - Browse, load, and manage conversation sessions per tab
+- **Model Selector** - Per-tab model selection (Sonnet 4.6, Opus 4.7, Haiku 4.5)
 
 ### ⚡ Performance
 - **10-15MB Bundle** - ~90% smaller than Electron alternatives
@@ -104,17 +111,17 @@ While Anthropic's official Claude Code Desktop is packed with advanced features 
 ### Installation
 
 #### Windows
-1. Download `Claude.Cozy_0.6.8_x64-setup.exe` from [Releases](https://github.com/Hukushiyu/claude_cozy/releases)
+1. Download `Claude.Cozy_0.8.0_x64-setup.exe` from [Releases](https://github.com/Hukushiyu/claude_cozy/releases)
 2. Run the installer
 3. Launch "Claude Cozy" from Start Menu
 
 #### macOS (Apple Silicon - M1/M2/M3/M4)
-1. Download `Claude.Cozy_0.6.8_aarch64.dmg` from [Releases](https://github.com/Hukushiyu/claude_cozy/releases)
+1. Download `Claude.Cozy_0.8.0_aarch64.dmg` from [Releases](https://github.com/Hukushiyu/claude_cozy/releases)
 2. Open the DMG and drag Claude Cozy to Applications
 3. Launch from Applications - **No Gatekeeper warning!** ✨ (Signed with Developer ID)
 
 #### macOS (Intel)
-1. Download `Claude.Cozy_0.6.8_x64.dmg` from [Releases](https://github.com/Hukushiyu/claude_cozy/releases)
+1. Download `Claude.Cozy_0.8.0_x64.dmg` from [Releases](https://github.com/Hukushiyu/claude_cozy/releases)
 2. Open the DMG and drag Claude Cozy to Applications
 3. Launch from Applications - **No Gatekeeper warning!** ✨ (Signed with Developer ID)
 
@@ -147,6 +154,10 @@ While Anthropic's official Claude Code Desktop is packed with advanced features 
 
 | Shortcut | Action |
 |----------|--------|
+| `Ctrl+T` | Create new tab |
+| `Ctrl+W` | Close current tab |
+| `Ctrl+Tab` | Switch to next tab |
+| `Ctrl+Shift+Tab` | Switch to previous tab |
 | `Ctrl+O` | Open project folder |
 | `Ctrl+/` | Toggle help modal |
 | `Ctrl+Enter` | Send message |

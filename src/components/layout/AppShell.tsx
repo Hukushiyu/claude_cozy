@@ -5,14 +5,13 @@ import { ApiKeyDialog } from './ApiKeyDialog';
 import { ProjectSelectionModal } from './ProjectSelectionModal';
 import { CommandsModal } from '../help/CommandsModal';
 import { SettingsModal } from '../settings/SettingsModal';
-import { SessionBrowser } from '../chat/SessionBrowser';
-import { PermissionStatusButton } from './PermissionStatusButton';
-import { ModelSelector } from './ModelSelector';
+import { SkillsModal } from '../skills/SkillsModal';
+import { TabBar } from '../tabs/TabBar';
 import { useProjectStore } from '../../stores/projectStore';
 import { useSettingsStore } from '../../stores/settingsStore';
-import { useChatStore } from '../../stores/chatStore';
+import { useSkillsStore } from '../../stores/skillsStore';
+import { useTabStore } from '../../stores/tabStore';
 import { tauriAPI } from '../../utils/tauri-api';
-import type { UnlistenFn } from '@tauri-apps/api/event';
 import { APP_VERSION } from '../../version';
 import { logWithTimestamp } from '../../utils/logger';
 import iconImage from '../../assets/icon.png';
@@ -37,13 +36,13 @@ export function AppShell() {
   const [showProjectModal, setShowProjectModal] = useState(false);
   const [showCommandsModal, setShowCommandsModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
-  const [showSessionBrowser, setShowSessionBrowser] = useState(false);
-  const [currentSessionId, setCurrentSessionId] = useState<string>('');
+  const [showSkillsModal, setShowSkillsModal] = useState(false);
   const [cliError, setCliError] = useState<string | null>(null);
   const [isVerifyingCli, setIsVerifyingCli] = useState(false);
-  const { projectPath, selectProject, isSelectingProject } = useProjectStore();
+  const { projectPath, selectProject } = useProjectStore();
   const { assistantName, loadSettings } = useSettingsStore();
-  const { loadSessionById } = useChatStore();
+  const { loadCustomSkills } = useSkillsStore();
+  const { loadTabs } = useTabStore();
 
   // Load settings on mount
   useEffect(() => {
@@ -51,6 +50,18 @@ export function AppShell() {
     loadSettings();
     logWithTimestamp('[AppShell] useEffect: loadSettings complete');
   }, [loadSettings]);
+
+  // Load custom skills on mount
+  useEffect(() => {
+    logWithTimestamp('[AppShell] Loading custom skills');
+    loadCustomSkills();
+  }, [loadCustomSkills]);
+
+  // Load tabs from localStorage on mount
+  useEffect(() => {
+    logWithTimestamp('[AppShell] Loading tabs');
+    loadTabs();
+  }, [loadTabs]);
 
   // Check Claude CLI installation and authentication (first launch only, after project selection)
   useEffect(() => {
@@ -98,14 +109,20 @@ export function AppShell() {
     // Tauri always uses CLI auth, no API key dialog needed
   }, []);
 
-  // Show project selection modal if no project is selected
+  // Show project selection modal only if no tabs exist
+  // Use selector to ensure we subscribe to tab changes
+  const tabs = useTabStore(state => state.tabs);
   useEffect(() => {
-    if (!projectPath && !showApiKeyDialog) {
+    console.log('[AppShell] Tab count changed:', tabs.length);
+    // Only show project modal if we have no tabs at all
+    if (tabs.length === 0 && !showApiKeyDialog) {
+      console.log('[AppShell] No tabs - showing project modal');
       setShowProjectModal(true);
     } else {
+      console.log('[AppShell] Have tabs - hiding project modal');
       setShowProjectModal(false);
     }
-  }, [projectPath, showApiKeyDialog]);
+  }, [tabs.length, showApiKeyDialog]);
 
   // API key handlers not needed for Tauri
   const handleApiKeySubmit = async (_apiKey: string) => {
@@ -119,42 +136,99 @@ export function AppShell() {
   };
 
   const handleProjectSelect = async () => {
+    const { addTab, canAddTab } = useTabStore.getState();
+
+    // Select a project folder
     await selectProject();
-    // Modal will auto-close via useEffect when projectPath changes
+
+    // Get the selected project path
+    const selectedPath = useProjectStore.getState().projectPath;
+
+    // If a project was selected and we can add a tab, create one
+    if (selectedPath && canAddTab()) {
+      console.log('[AppShell] Creating tab for selected project:', selectedPath);
+      addTab(selectedPath);
+    }
   };
 
-  // Listen for session ID from Claude CLI
+  // Keyboard shortcuts
   useEffect(() => {
-    let unlisten: UnlistenFn | null = null;
+    const { tabs, activeTabId, switchTab, addTab, removeTab, canAddTab } = useTabStore.getState();
 
-    const setupListener = async () => {
-      const { listen } = await import('@tauri-apps/api/event');
-      unlisten = await listen<string>('chat:session-id', (event) => {
-        console.log('[AppShell] Session ID received:', event.payload);
-        setCurrentSessionId(event.payload);
-      });
-    };
-
-    setupListener();
-
-    return () => {
-      if (unlisten) unlisten();
-    };
-  }, []);
-
-  // Keyboard shortcut for help modal: Ctrl+/ or Cmd+/ (toggles open/closed)
-  useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Check for Ctrl+/ or Cmd+/
+      // Help modal: Ctrl+/ or Cmd+/
       if ((e.ctrlKey || e.metaKey) && e.key === '/') {
         e.preventDefault();
         setShowCommandsModal(prev => !prev);
+        return;
+      }
+
+      // New tab: Ctrl+T or Cmd+T
+      if ((e.ctrlKey || e.metaKey) && e.key === 't') {
+        e.preventDefault();
+        if (canAddTab()) {
+          console.log('[AppShell] Keyboard shortcut: New tab');
+          // Trigger folder picker using tauriAPI directly
+          tauriAPI.selectProject().then((result) => {
+            if (result) {
+              addTab(result);
+            }
+          }).catch(err => {
+            console.error('[AppShell] Failed to select project:', err);
+          });
+        }
+        return;
+      }
+
+      // Close tab: Ctrl+W or Cmd+W
+      if ((e.ctrlKey || e.metaKey) && e.key === 'w') {
+        e.preventDefault();
+        if (activeTabId) {
+          console.log('[AppShell] Keyboard shortcut: Close tab');
+          removeTab(activeTabId);
+        }
+        return;
+      }
+
+      // Next tab: Ctrl+Tab
+      if (e.ctrlKey && e.key === 'Tab' && !e.shiftKey) {
+        e.preventDefault();
+        const currentIndex = tabs.findIndex(t => t.id === activeTabId);
+        if (currentIndex !== -1) {
+          const nextIndex = (currentIndex + 1) % tabs.length;
+          console.log('[AppShell] Keyboard shortcut: Next tab');
+          switchTab(tabs[nextIndex].id);
+        }
+        return;
+      }
+
+      // Previous tab: Ctrl+Shift+Tab
+      if (e.ctrlKey && e.key === 'Tab' && e.shiftKey) {
+        e.preventDefault();
+        const currentIndex = tabs.findIndex(t => t.id === activeTabId);
+        if (currentIndex !== -1) {
+          const prevIndex = (currentIndex - 1 + tabs.length) % tabs.length;
+          console.log('[AppShell] Keyboard shortcut: Previous tab');
+          switchTab(tabs[prevIndex].id);
+        }
+        return;
+      }
+
+      // Tab by number: Ctrl+1 through Ctrl+6
+      if (e.ctrlKey && e.key >= '1' && e.key <= '6') {
+        e.preventDefault();
+        const index = parseInt(e.key, 10) - 1;
+        if (index < tabs.length) {
+          console.log('[AppShell] Keyboard shortcut: Switch to tab', index + 1);
+          switchTab(tabs[index].id);
+        }
+        return;
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, []); // Empty deps - we use getState() to get fresh data
 
   // Detect if running on Mac
   const isMac = typeof window !== 'undefined' && navigator.platform.toLowerCase().includes('mac');
@@ -200,18 +274,7 @@ export function AppShell() {
       {showProjectModal && <ProjectSelectionModal onSelectProject={handleProjectSelect} />}
       <CommandsModal isOpen={showCommandsModal} onClose={() => setShowCommandsModal(false)} />
       <SettingsModal isOpen={showSettingsModal} onClose={() => setShowSettingsModal(false)} />
-      <SessionBrowser
-        isOpen={showSessionBrowser}
-        onClose={() => setShowSessionBrowser(false)}
-        projectPath={projectPath || ''}
-        currentSessionId={currentSessionId}
-        onLoadSession={async (sessionId) => {
-          setCurrentSessionId(sessionId);
-          if (sessionId) {
-            await loadSessionById(sessionId);
-          }
-        }}
-      />
+      <SkillsModal isOpen={showSkillsModal} onClose={() => setShowSkillsModal(false)} />
 
       {/* CLI Verification Loading Overlay (first launch only) */}
       {isVerifyingCli && (
@@ -284,44 +347,8 @@ export function AppShell() {
                 </div>
               </div>
 
-              {/* Project Section */}
-              <div className="px-4 py-3 border-b flex-shrink-0" style={{ borderColor: 'var(--theme-border)' }}>
-                <div className="text-xs font-semibold mb-2 tracking-wide" style={{ color: 'var(--theme-textSecondary)' }}>
-                  PROJECT
-                </div>
-                <button
-                  onClick={selectProject}
-                  disabled={isSelectingProject}
-                  className="w-full px-4 py-2 text-white rounded transition-opacity text-sm font-medium app-no-drag disabled:opacity-50 disabled:cursor-not-allowed"
-                  style={{ backgroundColor: 'var(--theme-accent)' }}
-                  onMouseEnter={(e) => {
-                    if (!isSelectingProject) {
-                      e.currentTarget.style.backgroundColor = 'var(--theme-accentHover)';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = 'var(--theme-accent)';
-                  }}
-                >
-                  {isSelectingProject ? (
-                    <>
-                      <span className="inline-block animate-spin mr-2">⏳</span>
-                      Opening file picker...
-                    </>
-                  ) : (
-                    'Change Project Folder'
-                  )}
-                </button>
-
-                {projectPath && (
-                  <div className="mt-2 text-xs truncate" style={{ color: 'var(--theme-textSecondary)' }} title={projectPath}>
-                    ~{projectPath.split(/[/\\]/).slice(-2).join('/')}
-                  </div>
-                )}
-              </div>
-
-              {/* File Tree Section */}
-              <div className="px-4 py-3 border-b flex-shrink-0" style={{ borderColor: 'var(--theme-border)' }}>
+              {/* Workspace Label */}
+              <div className="px-4 py-2 border-b flex-shrink-0" style={{ borderColor: 'var(--theme-border)' }}>
                 <div className="text-xs font-semibold tracking-wide" style={{ color: 'var(--theme-textSecondary)' }}>
                   WORKSPACE
                 </div>
@@ -372,30 +399,6 @@ export function AppShell() {
 
           <div className="ml-auto flex items-center gap-2 app-no-drag">
             <button
-              onClick={() => setShowSessionBrowser(true)}
-              className="px-3 py-1.5 rounded-lg border transition-colors text-xs font-medium flex items-center gap-1.5"
-              style={{
-                backgroundColor: 'rgba(168, 85, 247, 0.1)',
-                borderColor: 'rgb(168, 85, 247)',
-                color: 'rgb(126, 34, 206)'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = 'rgba(168, 85, 247, 0.15)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'rgba(168, 85, 247, 0.1)';
-              }}
-              title="Browse and manage sessions"
-            >
-              <span>📋</span>
-              <span>Sessions</span>
-            </button>
-
-            <ModelSelector />
-
-            <PermissionStatusButton />
-
-            <button
               onClick={() => setShowSettingsModal(true)}
               className="px-3 py-1.5 rounded-lg border transition-colors text-xs font-medium flex items-center gap-1.5"
               style={{
@@ -413,6 +416,26 @@ export function AppShell() {
             >
               <span>⚙️</span>
               <span>Settings</span>
+            </button>
+
+            <button
+              onClick={() => setShowSkillsModal(true)}
+              className="px-3 py-1.5 rounded-lg border transition-colors text-xs font-medium flex items-center gap-1.5"
+              style={{
+                backgroundColor: 'rgba(147, 51, 234, 0.1)',
+                borderColor: 'rgb(147, 51, 234)',
+                color: 'rgb(107, 33, 168)'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = 'rgba(147, 51, 234, 0.15)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'rgba(147, 51, 234, 0.1)';
+              }}
+              title="Manage custom skills"
+            >
+              <span>🛠️</span>
+              <span>Skills</span>
             </button>
 
             <button
@@ -436,6 +459,9 @@ export function AppShell() {
             </button>
           </div>
         </div>
+
+        {/* Tab Bar - Full Width */}
+        <TabBar />
 
         {/* CLI Error Banner */}
         {cliError && (

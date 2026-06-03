@@ -1,9 +1,10 @@
 import { useState, KeyboardEvent, useRef, useEffect, forwardRef, useImperativeHandle, ChangeEvent } from 'react';
 import { useDragStore } from '../../stores/dragStore';
-import { useProjectStore } from '../../stores/projectStore';
+import { useTabStore } from '../../stores/tabStore';
+import { useSkillsStore } from '../../stores/skillsStore';
 import { AutocompleteDropdown } from './AutocompleteDropdown';
 import { Suggestion } from '../../types/chat';
-import { SLASH_COMMANDS, flattenFileTree } from '../../utils/suggestions';
+import { flattenFileTree } from '../../utils/suggestions';
 import { fuzzySearch } from '../../utils/fuzzySearch';
 import { getCaretCoordinates } from '../../utils/caretPosition';
 
@@ -21,7 +22,11 @@ export const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(({ onSend, 
   const [isDragOver, setIsDragOver] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { draggedFile } = useDragStore();
-  const { fileTree, projectPath } = useProjectStore();
+  const { getActiveTab, getActiveFileTreeState } = useTabStore();
+  const activeTab = getActiveTab();
+  const projectPath = activeTab?.projectPath || null;
+  const { fileTree } = getActiveFileTreeState();
+  const { getAllSkills } = useSkillsStore();
 
   // Autocomplete state
   const [showAutocomplete, setShowAutocomplete] = useState(false);
@@ -159,10 +164,13 @@ export const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(({ onSend, 
     const lastWord = textBeforeCursor.split(/\s/).pop() || '';
 
     if (lastWord.startsWith('/')) {
-      // Command autocomplete
+      // Command autocomplete - merge built-in and custom skills
       const query = lastWord.substring(1);
-      const filtered = fuzzySearch(query, SLASH_COMMANDS);
+      const allCommands = getAllSkills();
+      console.log('[InputArea] Autocomplete trigger - query:', query, 'allCommands:', allCommands.length);
+      const filtered = fuzzySearch(query, allCommands);
       const topSuggestions = filtered.slice(0, 50).map(m => m.item);
+      console.log('[InputArea] Filtered suggestions:', topSuggestions.length, topSuggestions.map(s => s.name));
 
       setSuggestions(topSuggestions);
       setAutocompleteType('command');

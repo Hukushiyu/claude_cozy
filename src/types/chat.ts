@@ -52,11 +52,17 @@ export type GroupedChatItem =
   | { type: 'tool-group'; data: ConsolidatedTool[]; timestamp: Date; id: string };
 
 // Types for autocomplete suggestions
+export type CommandType = 'app' | 'skill';
+
 export interface CommandSuggestion {
   type: 'command';
+  commandType: CommandType;  // Distinguish app commands vs Claude CLI skills
   name: string;
   description: string;
   icon: string;
+  usage?: string;            // Usage example (e.g., "/loop <interval> <command>")
+  category?: string;         // Skill category (e.g., "workflow", "configuration")
+  examples?: string[];       // Example invocations
 }
 
 export interface FileSuggestion {

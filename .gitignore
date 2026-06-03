@@ -53,3 +53,4 @@ certificate-base64.txt
 .env
 .tauri-signing.key
 .tauri-signing.key.pub
+CLAUDE.md

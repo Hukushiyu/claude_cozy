@@ -8,6 +8,8 @@ interface StreamEvent {
   toolName?: string;
   thinkingStatus?: string;
   toolInput?: Record<string, any>;
+  inputTokens?: number;
+  outputTokens?: number;
 }
 
 export const tauriAPI = {
@@ -147,6 +149,10 @@ export const tauriAPI = {
     }
   },
 
+  getClaudeUsage: async (): Promise<{ raw_output: string; error?: string }> => {
+    return await invoke<{ raw_output: string; error?: string }>('get_claude_usage');
+  },
+
   // Skills
   listCustomSkills: async (): Promise<any[]> => {
     return await invoke<any[]>('list_custom_skills');
@@ -173,9 +179,9 @@ export const tauriAPI = {
     });
   },
 
-  onMessageComplete: async (callback: () => void): Promise<UnlistenFn> => {
-    return await listen<StreamEvent>('chat:result', () => {
-      callback();
+  onMessageComplete: async (callback: (inputTokens?: number, outputTokens?: number) => void): Promise<UnlistenFn> => {
+    return await listen<StreamEvent>('chat:result', (event) => {
+      callback(event.payload.inputTokens, event.payload.outputTokens);
     });
   },
 

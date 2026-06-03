@@ -1,26 +1,11 @@
 import { create } from 'zustand';
-
-export interface Theme {
-  id: string;
-  name: string;
-  colors: {
-    // Main backgrounds
-    bg: string;
-    sidebarBg: string;
-    // Text colors
-    text: string;
-    textSecondary: string;
-    // Accent colors
-    accent: string;
-    accentHover: string;
-    // UI elements
-    border: string;
-    hover: string;
-    // Chat specific
-    userBubble: string;
-    assistantBubble: string;
-  };
-}
+import { Theme } from '../types/theme';
+import {
+  isValidTheme,
+  sanitizeThemeName,
+  generateCustomThemeId,
+  validateImportedTheme,
+} from '../utils/themeValidation';
 
 export const themes: Theme[] = [
   {
@@ -141,20 +126,33 @@ interface SettingsStore {
   currentTheme: Theme;
   assistantName: string;
   selectedModel: string;
+  customThemes: Theme[];
+
   setTheme: (themeId: string) => void;
   setAssistantName: (name: string) => void;
   setSelectedModel: (modelId: string) => void;
   loadTheme: () => void;
   loadSettings: () => void;
+
+  // Custom theme management
+  loadCustomThemes: () => void;
+  saveCustomTheme: (theme: Omit<Theme, 'id'>) => string;
+  updateCustomTheme: (themeId: string, theme: Omit<Theme, 'id'>) => boolean;
+  deleteCustomTheme: (themeId: string) => boolean;
+  exportTheme: (themeId: string) => string | null;
+  importTheme: (jsonString: string) => { success: boolean; error?: string; themeName?: string };
+  getAllThemes: () => Theme[];
 }
 
-export const useSettingsStore = create<SettingsStore>((set) => ({
+export const useSettingsStore = create<SettingsStore>((set, get) => ({
   currentTheme: themes[0], // Default to Claude Classic
   assistantName: 'Claude', // Default assistant name
   selectedModel: 'claude-sonnet-4-6', // Default to Sonnet 4.6
+  customThemes: [], // Empty array initially, loaded from localStorage
 
   setTheme: (themeId: string) => {
-    const theme = themes.find(t => t.id === themeId);
+    const allThemes = get().getAllThemes();
+    const theme = allThemes.find(t => t.id === themeId);
     if (theme) {
       set({ currentTheme: theme });
       // Apply theme to CSS variables
@@ -178,7 +176,8 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
   loadTheme: () => {
     const savedThemeId = localStorage.getItem('claude-theme');
     if (savedThemeId) {
-      const theme = themes.find(t => t.id === savedThemeId);
+      const allThemes = get().getAllThemes();
+      const theme = allThemes.find(t => t.id === savedThemeId);
       if (theme) {
         set({ currentTheme: theme });
         applyTheme(theme);
@@ -190,10 +189,14 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
   },
 
   loadSettings: () => {
+    // Load custom themes first
+    get().loadCustomThemes();
+
     // Load theme
     const savedThemeId = localStorage.getItem('claude-theme');
     if (savedThemeId) {
-      const theme = themes.find(t => t.id === savedThemeId);
+      const allThemes = get().getAllThemes();
+      const theme = allThemes.find(t => t.id === savedThemeId);
       if (theme) {
         set({ currentTheme: theme });
         applyTheme(theme);
@@ -213,7 +216,158 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
     if (savedModel) {
       set({ selectedModel: savedModel });
     }
-  }
+  },
+
+  // Custom theme management
+  loadCustomThemes: () => {
+    try {
+      const saved = localStorage.getItem('custom-themes');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          // Validate each theme
+          const validThemes = parsed.filter(isValidTheme);
+          set({ customThemes: validThemes });
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load custom themes:', error);
+      set({ customThemes: [] });
+    }
+  },
+
+  saveCustomTheme: (themeData: Omit<Theme, 'id'>) => {
+    const id = generateCustomThemeId();
+    const sanitizedName = sanitizeThemeName(themeData.name);
+
+    const newTheme: Theme = {
+      id,
+      name: sanitizedName || 'Custom Theme',
+      colors: themeData.colors,
+    };
+
+    const customThemes = [...get().customThemes, newTheme];
+
+    try {
+      localStorage.setItem('custom-themes', JSON.stringify(customThemes));
+      set({ customThemes });
+      return id;
+    } catch (error) {
+      console.error('Failed to save custom theme:', error);
+      if (error instanceof Error && error.name === 'QuotaExceededError') {
+        throw new Error('Storage quota exceeded. Please delete some custom themes.');
+      }
+      throw error;
+    }
+  },
+
+  updateCustomTheme: (themeId: string, themeData: Omit<Theme, 'id'>) => {
+    const customThemes = get().customThemes;
+    const index = customThemes.findIndex(t => t.id === themeId);
+
+    if (index === -1) {
+      return false; // Theme not found
+    }
+
+    const sanitizedName = sanitizeThemeName(themeData.name);
+    const updatedTheme: Theme = {
+      id: themeId,
+      name: sanitizedName || 'Custom Theme',
+      colors: themeData.colors,
+    };
+
+    const updated = [...customThemes];
+    updated[index] = updatedTheme;
+
+    try {
+      localStorage.setItem('custom-themes', JSON.stringify(updated));
+      set({ customThemes: updated });
+
+      // If this theme is currently active, update it
+      if (get().currentTheme.id === themeId) {
+        set({ currentTheme: updatedTheme });
+        applyTheme(updatedTheme);
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Failed to update custom theme:', error);
+      return false;
+    }
+  },
+
+  deleteCustomTheme: (themeId: string) => {
+    const customThemes = get().customThemes;
+    const filtered = customThemes.filter(t => t.id !== themeId);
+
+    if (filtered.length === customThemes.length) {
+      return false; // Theme not found
+    }
+
+    try {
+      localStorage.setItem('custom-themes', JSON.stringify(filtered));
+      set({ customThemes: filtered });
+
+      // If deleted theme is currently active, switch to default
+      if (get().currentTheme.id === themeId) {
+        get().setTheme(themes[0].id);
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Failed to delete custom theme:', error);
+      return false;
+    }
+  },
+
+  exportTheme: (themeId: string) => {
+    const allThemes = get().getAllThemes();
+    const theme = allThemes.find(t => t.id === themeId);
+
+    if (!theme) {
+      return null;
+    }
+
+    return JSON.stringify(theme, null, 2);
+  },
+
+  importTheme: (jsonString: string) => {
+    const validation = validateImportedTheme(jsonString);
+
+    if (!validation.valid) {
+      return { success: false, error: validation.error };
+    }
+
+    const importedTheme = validation.theme;
+
+    // Generate new ID to avoid conflicts
+    const id = generateCustomThemeId();
+    const sanitizedName = sanitizeThemeName(importedTheme.name);
+
+    const newTheme: Theme = {
+      id,
+      name: sanitizedName || 'Imported Theme',
+      colors: importedTheme.colors,
+    };
+
+    const customThemes = [...get().customThemes, newTheme];
+
+    try {
+      localStorage.setItem('custom-themes', JSON.stringify(customThemes));
+      set({ customThemes });
+      return { success: true, themeName: newTheme.name };
+    } catch (error) {
+      console.error('Failed to import theme:', error);
+      if (error instanceof Error && error.name === 'QuotaExceededError') {
+        return { success: false, error: 'Storage quota exceeded. Please delete some custom themes.' };
+      }
+      return { success: false, error: 'Failed to save imported theme.' };
+    }
+  },
+
+  getAllThemes: () => {
+    return [...themes, ...get().customThemes];
+  },
 }));
 
 function applyTheme(theme: Theme) {

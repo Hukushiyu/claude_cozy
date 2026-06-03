@@ -2,6 +2,56 @@
 
 All notable changes to Claude Cozy will be documented in this file.
 
+## [0.8.4] - 2026-06-03
+
+### 🎨 UI/UX Improvements
+
+#### Unified Button Design System
+- **Consistent monotone color scheme** - All buttons and dropdowns follow theme-aware design
+- **Primary buttons** (Settings, Help) - Accent background with white text, keep emojis (⚙️ ?)
+- **Secondary buttons** (Skills) - Transparent background with border, no emojis
+- **Dropdowns** (Permission Mode, Model Selection) - Secondary style, removed emojis from main button
+  - Selected items use accent background with white text
+  - Unselected items use theme colors
+- **All elements theme-customizable** - Buttons and dropdowns adapt to all 6 built-in themes and custom themes
+
+#### Sidebar Simplification
+- **Session History** - Changed from button to simple underlined text link
+- **Token Counter** - Changed from card/button to plain text overlay ("Tokens: 12.5K")
+- **Cleaner visual hierarchy** - Less visual noise, more focus on content
+
+#### Tab Spacing Improvements
+- **Reduced gap** between folder name and close button (× symbol)
+- **More compact tabs** - Tabs take less space, allowing more to fit on screen
+- **Better padding** - Tabs feel more cohesive and browser-like
+
+#### Enhanced Theme Editor
+- **Clearer color labels** - Descriptions explicitly mention what each color controls
+  - "Primary Buttons" (was "Accent") - "Settings & Help buttons, selected dropdown items"
+  - "Borders & Secondary" (was "Border") - "Dropdown borders, secondary button outlines"
+  - "Secondary Hover" (was "Hover Background") - "Hover for dropdowns & secondary buttons"
+- **Comprehensive preview** - Live preview shows all button types, dropdowns, and text elements
+  - Primary and secondary button examples
+  - Dropdown styling preview
+  - Sidebar elements (links, text overlays)
+  - Chat message bubbles
+
+### 🐛 Bug Fixes
+
+#### Token Counter Reset on Session Deletion
+- **Fixed session tracking** - FileTree now listens for `chat:session-id` event from CLI
+- **Proper deletion detection** - Session deletion correctly identified as current session
+- **Multiple reset paths** - Token counter resets on:
+  - Clear history via UI
+  - Delete current session via Session Browser
+  - Load different past session
+  - Start new session (empty history detected)
+  - Switch tabs and load empty session
+
+#### Session Management
+- **Session ID synchronization** - Active session ID now properly tracked across app
+- **Logging improvements** - Added detailed logs for session deletion flow debugging
+
 ## [0.8.0] - 2026-06-02
 
 ### 🎉 Major Features

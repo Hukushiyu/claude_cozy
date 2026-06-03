@@ -9,6 +9,12 @@ pub struct ClaudeStatus {
     pub error: Option<String>,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct UsageData {
+    pub raw_output: String,
+    pub error: Option<String>,
+}
+
 /// Find the Claude CLI executable in common locations
 /// Returns the full path or "claude" as fallback
 pub fn find_claude_cli() -> String {
@@ -165,4 +171,40 @@ pub fn open_terminal_for_auth() -> Result<(), String> {
     }
 
     Ok(())
+}
+
+#[tauri::command]
+pub fn get_claude_usage() -> Result<UsageData, String> {
+    let claude_path = find_claude_cli();
+
+    // Run claude usage command
+    let usage_check = Command::new(&claude_path)
+        .args(&["usage"])
+        .output();
+
+    match usage_check {
+        Ok(output) => {
+            let stdout = String::from_utf8_lossy(&output.stdout).to_string();
+            let stderr = String::from_utf8_lossy(&output.stderr).to_string();
+
+            println!("[CLI] Usage stdout: {}", stdout);
+            println!("[CLI] Usage stderr: {}", stderr);
+
+            if !output.status.success() {
+                return Ok(UsageData {
+                    raw_output: String::new(),
+                    error: Some(format!("Usage command failed: {}", stderr)),
+                });
+            }
+
+            Ok(UsageData {
+                raw_output: stdout,
+                error: None,
+            })
+        }
+        Err(e) => Ok(UsageData {
+            raw_output: String::new(),
+            error: Some(format!("Error running usage command: {}", e)),
+        }),
+    }
 }

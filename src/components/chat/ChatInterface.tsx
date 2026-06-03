@@ -106,8 +106,20 @@ export function ChatInterface() {
 
       if (cancelled) { unlistenChunk(); return; }
 
-      unlistenComplete = await tauriAPI.onMessageComplete(() => {
+      unlistenComplete = await tauriAPI.onMessageComplete((inputTokens, outputTokens) => {
         console.log('[ChatInterface] Message complete');
+        if (inputTokens !== undefined && outputTokens !== undefined) {
+          const totalTokens = inputTokens + outputTokens;
+          console.log(`[ChatInterface] Token usage - Input: ${inputTokens}, Output: ${outputTokens}, Total: ${totalTokens}`);
+          // Update tab's token count
+          const { updateTab } = useTabStore.getState();
+          const { activeTabId, getActiveTab } = useTabStore.getState();
+          if (activeTabId) {
+            const currentTab = getActiveTab();
+            const currentTotal = currentTab?.totalTokens || 0;
+            updateTab(activeTabId, { totalTokens: currentTotal + totalTokens });
+          }
+        }
         finalizeStream();
       });
 

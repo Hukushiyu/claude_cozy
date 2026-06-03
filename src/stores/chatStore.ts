@@ -206,6 +206,74 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     const projectPath = activeTab.projectPath;
     const model = activeTab.selectedModel;
 
+    // Check if this is a /usage command
+    if (content.trim() === '/usage') {
+      console.log('[chatStore] Detected /usage command');
+
+      // Add user message
+      const userMessage: Message = {
+        id: crypto.randomUUID(),
+        role: 'user',
+        content,
+        timestamp: new Date()
+      };
+
+      set(state => ({
+        tabStates: {
+          ...state.tabStates,
+          [activeTabId]: {
+            ...state.tabStates[activeTabId],
+            messages: [...state.tabStates[activeTabId].messages, userMessage]
+          }
+        }
+      }));
+
+      // Fetch usage data
+      try {
+        const usageData = await tauriAPI.getClaudeUsage();
+
+        if (usageData.error) {
+          throw new Error(usageData.error);
+        }
+
+        // Add usage message
+        const usageMessage: Message = {
+          id: crypto.randomUUID(),
+          role: 'usage',
+          content: usageData.raw_output,
+          timestamp: new Date()
+        };
+
+        set(state => ({
+          tabStates: {
+            ...state.tabStates,
+            [activeTabId]: {
+              ...state.tabStates[activeTabId],
+              messages: [...state.tabStates[activeTabId].messages, usageMessage],
+              isLoading: false,
+              isThinking: false,
+              thinkingStatus: null
+            }
+          }
+        }));
+      } catch (error) {
+        console.error('[chatStore] Usage command error:', error);
+        set(state => ({
+          tabStates: {
+            ...state.tabStates,
+            [activeTabId]: {
+              ...state.tabStates[activeTabId],
+              error: error instanceof Error ? error.message : 'Failed to fetch usage data',
+              isLoading: false,
+              isThinking: false,
+              thinkingStatus: null
+            }
+          }
+        }));
+      }
+      return;
+    }
+
     try {
       console.log('[chatStore] Sending message to Claude CLI');
       console.log('[chatStore] Content:', content);
@@ -563,6 +631,10 @@ export const useChatStore = create<ChatStore>((set, get) => ({
             [activeTabId]: createEmptyTabState()
           }
         }));
+
+        // Reset token count when loading empty session
+        const { updateTab } = useTabStore.getState();
+        updateTab(activeTabId, { totalTokens: 0 });
       }
     } catch (error) {
       console.error('[chatStore] Failed to load history:', error);
@@ -623,6 +695,10 @@ export const useChatStore = create<ChatStore>((set, get) => ({
           }
         }));
 
+        // Reset token count when loading a different session
+        const { updateTab } = useTabStore.getState();
+        updateTab(activeTabId, { totalTokens: 0 });
+
         console.log(`[chatStore] Loaded ${messages.length} messages from session ${sessionId}`);
       } else {
         console.log(`[chatStore] Session ${sessionId} is empty`);
@@ -632,6 +708,9 @@ export const useChatStore = create<ChatStore>((set, get) => ({
             [activeTabId]: createEmptyTabState()
           }
         }));
+        // Reset token count for empty session
+        const { updateTab } = useTabStore.getState();
+        updateTab(activeTabId, { totalTokens: 0 });
       }
     } catch (error) {
       console.error('[chatStore] Failed to load session:', error);
@@ -678,6 +757,10 @@ export const useChatStore = create<ChatStore>((set, get) => ({
           [activeTabId]: createEmptyTabState()
         }
       }));
+
+      // Reset token count for this tab
+      const { updateTab } = useTabStore.getState();
+      updateTab(activeTabId, { totalTokens: 0 });
 
       console.log('[chatStore] State reset complete for tab:', activeTabId);
     } catch (error) {

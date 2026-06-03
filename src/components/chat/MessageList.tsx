@@ -2,6 +2,7 @@ import { Message, ToolEvent, CombinedChatItem, GroupedChatItem, ConsolidatedTool
 import { MessageBubble } from './MessageBubble';
 import { ToolCardGroup } from './ToolCardGroup';
 import { ThinkingIndicator } from './ThinkingIndicator';
+import { UsageCard } from './UsageCard';
 
 interface MessageListProps {
   messages: Message[];
@@ -102,13 +103,19 @@ export function MessageList({
 
   return (
     <div className="space-y-4">
-      {groupedItems.map((item) => (
-        item.type === 'message' ? (
-          <MessageBubble key={item.data.id} message={item.data as Message} />
-        ) : (
-          <ToolCardGroup key={item.id} tools={item.data} />
-        )
-      ))}
+      {groupedItems.map((item) => {
+        if (item.type === 'message') {
+          const message = item.data as Message;
+          // Render UsageCard for usage messages
+          if (message.role === 'usage') {
+            return <UsageCard key={message.id} content={message.content} timestamp={message.timestamp} />;
+          }
+          // Regular message bubble
+          return <MessageBubble key={message.id} message={message} />;
+        }
+        // Tool group
+        return <ToolCardGroup key={item.id} tools={item.data} />;
+      })}
 
       {/* Show thinking indicator when Claude is processing */}
       {isThinking && thinkingStatus !== null && (

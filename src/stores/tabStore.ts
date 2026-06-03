@@ -11,6 +11,7 @@ export interface Tab {
   permissionMode: string;
   selectedModel: string;
   createdAt: number;
+  totalTokens?: number; // Running total of tokens used in this session
 }
 
 interface TabFileTreeState {

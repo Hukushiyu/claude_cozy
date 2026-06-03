@@ -398,11 +398,12 @@ export function AppShell() {
           )}
 
           <div className="ml-auto flex items-center gap-2 app-no-drag">
+            {/* Skills button - Secondary style */}
             <button
-              onClick={() => setShowSettingsModal(true)}
-              className="px-3 py-1.5 rounded-lg border transition-colors text-xs font-medium flex items-center gap-1.5"
+              onClick={() => setShowSkillsModal(true)}
+              className="px-3 py-1.5 rounded-lg border transition-colors text-xs font-medium"
               style={{
-                backgroundColor: 'var(--theme-bg)',
+                backgroundColor: 'transparent',
                 borderColor: 'var(--theme-border)',
                 color: 'var(--theme-text)'
               }}
@@ -410,7 +411,26 @@ export function AppShell() {
                 e.currentTarget.style.backgroundColor = 'var(--theme-hover)';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'var(--theme-bg)';
+                e.currentTarget.style.backgroundColor = 'transparent';
+              }}
+              title="Manage custom skills"
+            >
+              Skills
+            </button>
+
+            {/* Settings button - Primary style */}
+            <button
+              onClick={() => setShowSettingsModal(true)}
+              className="px-3 py-1.5 rounded-lg transition-colors text-xs font-medium flex items-center gap-1.5"
+              style={{
+                backgroundColor: 'var(--theme-accent)',
+                color: '#FFFFFF'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--theme-accentHover)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--theme-accent)';
               }}
               title="Settings"
             >
@@ -418,39 +438,19 @@ export function AppShell() {
               <span>Settings</span>
             </button>
 
-            <button
-              onClick={() => setShowSkillsModal(true)}
-              className="px-3 py-1.5 rounded-lg border transition-colors text-xs font-medium flex items-center gap-1.5"
-              style={{
-                backgroundColor: 'rgba(147, 51, 234, 0.1)',
-                borderColor: 'rgb(147, 51, 234)',
-                color: 'rgb(107, 33, 168)'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = 'rgba(147, 51, 234, 0.15)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'rgba(147, 51, 234, 0.1)';
-              }}
-              title="Manage custom skills"
-            >
-              <span>🛠️</span>
-              <span>Skills</span>
-            </button>
-
+            {/* Help button - Primary style */}
             <button
               onClick={() => setShowCommandsModal(true)}
-              className="px-3 py-1.5 rounded-lg border transition-colors text-xs font-medium flex items-center gap-1.5"
+              className="px-3 py-1.5 rounded-lg transition-colors text-xs font-medium flex items-center gap-1.5"
               style={{
-                backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                borderColor: 'rgb(59, 130, 246)',
-                color: 'rgb(30, 64, 175)'
+                backgroundColor: 'var(--theme-accent)',
+                color: '#FFFFFF'
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = 'rgba(59, 130, 246, 0.15)';
+                e.currentTarget.style.backgroundColor = 'var(--theme-accentHover)';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'rgba(59, 130, 246, 0.1)';
+                e.currentTarget.style.backgroundColor = 'var(--theme-accent)';
               }}
               title="View available commands and skills (Ctrl+/)"
             >

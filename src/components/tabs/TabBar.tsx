@@ -94,14 +94,14 @@ export function TabBar() {
             key={tab.id}
             onClick={() => switchTab(tab.id)}
             onContextMenu={(e) => handleContextMenu(e, tab.id)}
-            className="group flex items-center gap-2 px-3 py-1.5 rounded-t border-t border-l border-r transition-all cursor-pointer flex-shrink-0 app-no-drag"
+            className="group flex items-center gap-1 px-2.5 py-1.5 rounded-t border-t border-l border-r transition-all cursor-pointer flex-shrink-0 app-no-drag"
             style={{
               backgroundColor: isActive ? 'var(--theme-bg)' : 'transparent',
               borderColor: isActive ? 'var(--theme-border)' : 'transparent',
               color: isActive ? 'var(--theme-text)' : 'var(--theme-textSecondary)',
               borderBottom: isActive ? '2px solid var(--theme-accent)' : 'none',
-              maxWidth: '200px',
-              minWidth: '120px'
+              maxWidth: '180px',
+              minWidth: '100px'
             }}
             title={tab.projectPath}
           >
@@ -112,7 +112,7 @@ export function TabBar() {
             {/* Close button - always show on hover or if active */}
             <button
               onClick={(e) => handleCloseTab(e, tab.id)}
-              className="flex-shrink-0 w-4 h-4 rounded hover:bg-red-500 hover:text-white transition-colors flex items-center justify-center text-xs opacity-0 group-hover:opacity-100"
+              className="flex-shrink-0 w-4 h-4 rounded hover:bg-red-500 hover:text-white transition-colors flex items-center justify-center text-xs leading-none opacity-0 group-hover:opacity-100"
               style={{
                 opacity: isActive ? 1 : undefined,
                 color: isActive ? 'var(--theme-text)' : 'var(--theme-textSecondary)'

@@ -61,14 +61,21 @@ export function SessionBrowser({ isOpen, onClose, projectPath, currentSessionId,
       cancelLabel: 'Cancel'
     });
 
-    if (!confirmed) return;
+    if (!confirmed) {
+      console.log('[SessionBrowser] Delete cancelled by user');
+      return;
+    }
+
+    console.log('[SessionBrowser] Deleting session:', sessionId, 'isCurrentSession:', isCurrentSession);
 
     try {
       await tauriAPI.deleteSession(projectPath, sessionId);
+      console.log('[SessionBrowser] Session deleted successfully');
       await loadSessions(); // Refresh list
 
       if (isCurrentSession) {
         // If we deleted the current session, reload to show empty state
+        console.log('[SessionBrowser] Calling onLoadSession("") to reset after deleting current session');
         onLoadSession(''); // Empty string triggers fresh start
       }
     } catch (err) {

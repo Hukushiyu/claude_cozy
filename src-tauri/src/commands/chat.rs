@@ -16,6 +16,8 @@ pub struct StreamEvent {
     pub tool_name: Option<String>,
     pub thinking_status: Option<String>,
     pub tool_input: Option<serde_json::Value>,
+    pub input_tokens: Option<u64>,
+    pub output_tokens: Option<u64>,
 }
 
 lazy_static::lazy_static! {
@@ -265,6 +267,8 @@ pub async fn send_message(
                                         tool_name: None,
                                         thinking_status: None,
                                         tool_input: None,
+                                        input_tokens: None,
+                                        output_tokens: None,
                                     });
                                     session_emitted_text = false;
                                 }
@@ -292,6 +296,8 @@ pub async fn send_message(
                                                             tool_name: None,
                                                             thinking_status: None,
                                                             tool_input: None,
+                                                            input_tokens: None,
+                                                            output_tokens: None,
                                                         });
                                                         session_emitted_text = true;
                                                     }
@@ -319,6 +325,8 @@ pub async fn send_message(
                                                             tool_name: Some(tool_name.to_string()),
                                                             thinking_status: None,
                                                             tool_input,
+                                                            input_tokens: None,
+                                                            output_tokens: None,
                                                         });
                                                     } else {
                                                         println!("[CHAT] Suppressing tool event (awaiting permission approval)");
@@ -334,6 +342,8 @@ pub async fn send_message(
                                                         tool_name: None,
                                                         thinking_status: None,
                                                         tool_input: None,
+                                                        input_tokens: None,
+                                                        output_tokens: None,
                                                     });
                                                 }
                                             }
@@ -354,6 +364,8 @@ pub async fn send_message(
                                 tool_name: None,
                                 thinking_status: Some(status.to_string()),
                                 tool_input: None,
+                                input_tokens: None,
+                                output_tokens: None,
                             });
                         }
                     }
@@ -368,12 +380,28 @@ pub async fn send_message(
                             println!("[CHAT] Suppressing result event (awaiting permission)");
                         } else {
                             println!("[CHAT] Emitting result event");
+
+                            // Extract token usage from result event
+                            let input_tokens = event.get("usage")
+                                .and_then(|u| u.get("input_tokens"))
+                                .and_then(|t| t.as_u64());
+                            let output_tokens = event.get("usage")
+                                .and_then(|u| u.get("output_tokens"))
+                                .and_then(|t| t.as_u64());
+
+                            if let (Some(input), Some(output)) = (input_tokens, output_tokens) {
+                                println!("[CHAT] Token usage - Input: {}, Output: {}, Total: {}",
+                                    input, output, input + output);
+                            }
+
                             let _ = app.emit("chat:result", StreamEvent {
                                 event_type: "result".to_string(),
                                 content: None,
                                 tool_name: None,
                                 thinking_status: None,
                                 tool_input: None,
+                                input_tokens,
+                                output_tokens,
                             });
 
                             // Note: We do NOT reset temporary approvals here anymore
@@ -404,6 +432,8 @@ pub async fn send_message(
                                             tool_name: None,
                                             thinking_status: Some(status),
                                             tool_input: None,
+                                            input_tokens: None,
+                                            output_tokens: None,
                                         });
                                     }
                                 }
@@ -417,6 +447,8 @@ pub async fn send_message(
                                     tool_name: None,
                                     thinking_status: Some(status),
                                     tool_input: None,
+                                    input_tokens: None,
+                                    output_tokens: None,
                                 });
                             }
                         }

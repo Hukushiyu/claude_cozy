@@ -11,6 +11,7 @@ import path from 'path-browserify';
 import { tauriAPI } from '../../utils/tauri-api';
 import type { PermissionMode } from '../../types/permissions';
 import { PERMISSION_MODE_DISPLAYS } from '../../types/permissions';
+import { listen } from '@tauri-apps/api/event';
 
 const MODELS = [
   { id: 'claude-sonnet-4-6', name: 'Sonnet 4.6' },
@@ -18,9 +19,18 @@ const MODELS = [
   { id: 'claude-haiku-4-5', name: 'Haiku 4.5' },
 ];
 
+function formatTokenCount(count: number): string {
+  if (count >= 1000000) {
+    return `${(count / 1000000).toFixed(1)}M`;
+  } else if (count >= 1000) {
+    return `${(count / 1000).toFixed(1)}K`;
+  }
+  return count.toString();
+}
+
 export function FileTree() {
   const { selectedModel, setSelectedModel } = useSettingsStore();
-  const { getActiveTab, activeTabId, getActiveFileTreeState, setFileTree, setLoadingTree } = useTabStore();
+  const { getActiveTab, activeTabId, getActiveFileTreeState, setFileTree, setLoadingTree, updateTab } = useTabStore();
   const activeTab = getActiveTab();
   const projectPath = activeTab?.projectPath || null;
 
@@ -91,6 +101,21 @@ export function FileTree() {
       loadFileTree();
     }
   }, [projectPath, activeTabId]);
+
+  // Listen for session ID from Claude CLI
+  useEffect(() => {
+    let unlisten: any = null;
+
+    listen<string>('chat:session-id', (event) => {
+      const sessionId = event.payload;
+      console.log('[FileTree] Session ID received from CLI:', sessionId);
+      setCurrentSessionId(sessionId);
+    }).then(fn => { unlisten = fn; });
+
+    return () => {
+      if (unlisten) unlisten();
+    };
+  }, []);
 
   // Close permission dropdown when clicking outside
   useEffect(() => {
@@ -245,21 +270,6 @@ export function FileTree() {
   const currentPermDisplay = PERMISSION_MODE_DISPLAYS[permissionMode];
   const currentModel = MODELS.find(m => m.id === selectedModel) || MODELS[0];
 
-  // Color mapping for permission modes
-  const getPermColorStyle = (mode: PermissionMode) => {
-    const colorMap = {
-      default: { bg: 'rgba(156, 163, 175, 0.1)', border: 'rgb(156, 163, 175)', text: 'rgb(107, 114, 128)' },
-      acceptEdits: { bg: 'rgba(59, 130, 246, 0.1)', border: 'rgb(59, 130, 246)', text: 'rgb(29, 78, 216)' },
-      bypassPermissions: { bg: 'rgba(245, 158, 11, 0.1)', border: 'rgb(245, 158, 11)', text: 'rgb(180, 83, 9)' },
-      plan: { bg: 'rgba(168, 85, 247, 0.1)', border: 'rgb(168, 85, 247)', text: 'rgb(126, 34, 206)' },
-      auto: { bg: 'rgba(20, 184, 166, 0.1)', border: 'rgb(20, 184, 166)', text: 'rgb(13, 148, 136)' },
-      dontAsk: { bg: 'rgba(239, 68, 68, 0.1)', border: 'rgb(239, 68, 68)', text: 'rgb(185, 28, 28)' },
-    };
-    return colorMap[mode];
-  };
-
-  const currentPermColor = getPermColorStyle(permissionMode);
-
   return (
     <div className="flex flex-col h-full">
       {/* Tab Controls: Permissions & Model */}
@@ -268,18 +278,17 @@ export function FileTree() {
         <div className="relative mb-2" ref={permDropdownRef}>
           <button
             onClick={() => setIsPermDropdownOpen(!isPermDropdownOpen)}
-            className="w-full flex items-center justify-between px-2 py-1.5 rounded border text-xs font-medium transition-colors"
+            className="w-full flex items-center justify-between px-2 py-1.5 rounded-lg border text-xs font-medium transition-colors"
             style={{
-              backgroundColor: currentPermColor.bg,
-              borderColor: currentPermColor.border,
-              color: currentPermColor.text
+              backgroundColor: 'transparent',
+              borderColor: 'var(--theme-border)',
+              color: 'var(--theme-text)'
             }}
+            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--theme-hover)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
             title={currentPermDisplay.description}
           >
-            <div className="flex items-center gap-1.5">
-              <span>{currentPermDisplay.icon}</span>
-              <span>{currentPermDisplay.text}</span>
-            </div>
+            <span>{currentPermDisplay.text}</span>
             <span className="text-xs" style={{ opacity: 0.6 }}>
               {isPermDropdownOpen ? '▲' : '▼'}
             </span>
@@ -298,7 +307,6 @@ export function FileTree() {
                 {(Object.keys(PERMISSION_MODE_DISPLAYS) as PermissionMode[]).map((mode) => {
                   const display = PERMISSION_MODE_DISPLAYS[mode];
                   const isSelected = permissionMode === mode;
-                  const modeColor = getPermColorStyle(mode);
 
                   return (
                     <button
@@ -306,8 +314,9 @@ export function FileTree() {
                       onClick={() => setPermissionMode(mode)}
                       className="w-full px-2 py-1.5 text-left transition-all flex items-start gap-2"
                       style={{
-                        backgroundColor: isSelected ? 'var(--theme-hover)' : 'transparent',
-                        borderLeft: isSelected ? `3px solid ${modeColor.border}` : '3px solid transparent'
+                        backgroundColor: isSelected ? 'var(--theme-accent)' : 'transparent',
+                        color: isSelected ? '#FFFFFF' : 'var(--theme-text)',
+                        borderLeft: isSelected ? '3px solid var(--theme-accentHover)' : '3px solid transparent'
                       }}
                       onMouseEnter={(e) => {
                         if (!isSelected) {
@@ -320,17 +329,18 @@ export function FileTree() {
                         }
                       }}
                     >
-                      <span className="text-sm flex-shrink-0">{display.icon}</span>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5 mb-0.5">
-                          <span className="font-medium text-xs" style={{ color: 'var(--theme-text)' }}>
+                          <span className="font-medium text-xs">
                             {display.text}
                           </span>
                           {isSelected && (
-                            <span className="text-xs" style={{ color: modeColor.border }}>✓</span>
+                            <span className="text-xs">✓</span>
                           )}
                         </div>
-                        <p className="text-xs leading-tight" style={{ color: 'var(--theme-textSecondary)' }}>
+                        <p className="text-xs leading-tight" style={{
+                          color: isSelected ? 'rgba(255, 255, 255, 0.8)' : 'var(--theme-textSecondary)'
+                        }}>
                           {display.description}
                         </p>
                       </div>
@@ -346,20 +356,17 @@ export function FileTree() {
         <div className="relative mb-2" ref={modelDropdownRef}>
           <button
             onClick={() => setIsModelDropdownOpen(!isModelDropdownOpen)}
-            className="w-full flex items-center justify-between px-2 py-1.5 rounded border text-xs font-medium transition-colors"
+            className="w-full flex items-center justify-between px-2 py-1.5 rounded-lg border text-xs font-medium transition-colors"
             style={{
-              backgroundColor: 'var(--theme-bg)',
+              backgroundColor: 'transparent',
               borderColor: 'var(--theme-border)',
               color: 'var(--theme-text)'
             }}
             title="Select Claude model"
             onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--theme-hover)'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'var(--theme-bg)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
           >
-            <div className="flex items-center gap-1.5">
-              <span>🤖</span>
-              <span>{currentModel.name}</span>
-            </div>
+            <span>{currentModel.name}</span>
             <span className="text-xs" style={{ opacity: 0.6 }}>
               {isModelDropdownOpen ? '▲' : '▼'}
             </span>
@@ -378,7 +385,12 @@ export function FileTree() {
                 <button
                   key={model.id}
                   onClick={() => {
+                    // Update global default model in settings
                     setSelectedModel(model.id);
+                    // Update the active tab's model
+                    if (activeTabId) {
+                      updateTab(activeTabId, { selectedModel: model.id });
+                    }
                     setIsModelDropdownOpen(false);
                   }}
                   className="w-full px-2 py-1.5 text-left transition-colors flex items-center justify-between text-xs"
@@ -407,24 +419,37 @@ export function FileTree() {
           )}
         </div>
 
-        {/* Session History Button */}
-        <div className="relative mb-2">
+        {/* Session History Link */}
+        <div className="relative mb-2 px-2">
           <button
             onClick={() => setShowSessionBrowser(true)}
-            className="w-full flex items-center justify-center gap-1.5 px-2 py-1.5 rounded border text-xs font-medium transition-colors"
+            className="text-xs font-medium underline cursor-pointer hover:no-underline transition-all"
             style={{
-              backgroundColor: 'rgba(168, 85, 247, 0.1)',
-              borderColor: 'rgb(168, 85, 247)',
-              color: 'rgb(126, 34, 206)'
+              color: 'var(--theme-text)',
             }}
             title="Browse and manage session history for this project"
-            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(168, 85, 247, 0.15)'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'rgba(168, 85, 247, 0.1)'; }}
           >
-            <span>📋</span>
-            <span>Session History</span>
+            Session History
           </button>
         </div>
+
+        {/* Token Counter Text */}
+        {activeTab?.totalTokens !== undefined && activeTab.totalTokens > 0 && (
+          <div className="relative mb-2 px-2">
+            <div
+              className="text-xs flex items-center justify-between"
+              style={{
+                color: 'var(--theme-textSecondary)',
+              }}
+              title="Total tokens used in this session"
+            >
+              <span>Tokens:</span>
+              <span className="font-mono font-medium" style={{ color: 'var(--theme-text)' }}>
+                {formatTokenCount(activeTab.totalTokens)}
+              </span>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Fixed Search Header */}
@@ -518,8 +543,16 @@ export function FileTree() {
           projectPath={projectPath}
           currentSessionId={currentSessionId}
           onLoadSession={(sessionId: string) => {
+            console.log('[FileTree] onLoadSession called with sessionId:', sessionId);
             setCurrentSessionId(sessionId);
             setShowSessionBrowser(false);
+            // Reset token count when switching sessions (empty or past session)
+            if (activeTabId) {
+              console.log('[FileTree] Resetting token count for tab:', activeTabId);
+              updateTab(activeTabId, { totalTokens: 0 });
+            } else {
+              console.log('[FileTree] No activeTabId - cannot reset token count');
+            }
           }}
         />
       )}
@@ -631,16 +664,25 @@ function FileTreeNode({ node, level, rootPath, onFileClick, onContextMenu, onIns
   return (
     <div>
       <div
-        className="flex items-center gap-1 px-2 py-1 hover:bg-gray-200 cursor-pointer rounded text-sm relative"
+        className="flex items-center gap-1 px-2 py-1 cursor-pointer rounded text-sm relative transition-colors"
         onClick={handleClick}
         onContextMenu={(e) => onContextMenu(e, node)}
-        onMouseEnter={() => setIsHovering(true)}
-        onMouseLeave={() => setIsHovering(false)}
-        style={{ paddingLeft: `${paddingLeft + 8}px` }}
+        onMouseEnter={(e) => {
+          setIsHovering(true);
+          e.currentTarget.style.backgroundColor = 'var(--theme-hover)';
+        }}
+        onMouseLeave={(e) => {
+          setIsHovering(false);
+          e.currentTarget.style.backgroundColor = 'transparent';
+        }}
+        style={{
+          paddingLeft: `${paddingLeft + 8}px`,
+          color: 'var(--theme-text)'
+        }}
       >
         {node.type === 'directory' ? (
           <>
-            <span className="text-gray-600">{isLoading ? '⟳' : isExpanded ? '▼' : '▶'}</span>
+            <span style={{ color: 'var(--theme-textSecondary)' }}>{isLoading ? '⟳' : isExpanded ? '▼' : '▶'}</span>
             <span>📁</span>
           </>
         ) : (
@@ -649,7 +691,7 @@ function FileTreeNode({ node, level, rootPath, onFileClick, onContextMenu, onIns
             <span>📄</span>
           </>
         )}
-        <span className="ml-1 flex-1">{highlightText(node.name, searchQuery)}</span>
+        <span className="ml-1 flex-1" style={{ color: 'var(--theme-text)' }}>{highlightText(node.name, searchQuery)}</span>
         {node.type === 'file' && isHovering && (
           <button
             onClick={handleInsertClick}

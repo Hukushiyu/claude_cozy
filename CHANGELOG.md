@@ -28,6 +28,17 @@ All notable changes to Claude Cozy will be documented in this file.
 - **Consolidated controls** - Permissions and Model selector in sidebar above file tree
 - **Per-tab sessions** - Each project's sessions isolated to that tab
 
+#### Custom Skills Management System
+- **Skills Manager UI** - 🛠️ Skills button in header opens full management interface
+- **Create custom skills** - Define your own slash commands with icons, descriptions, usage examples
+- **CRUD operations** - Add, edit, and delete custom skills via intuitive form
+- **Autocomplete integration** - Custom skills appear in / autocomplete alongside built-in skills
+- **Help modal integration** - Custom skills shown in Ctrl+/ help reference
+- **Persistence** - Skills saved to localStorage and persist across restarts
+- **Built-in skills display** - View all built-in Claude CLI skills (read-only)
+- **Validation** - Duplicate name detection, required field validation
+- **Categories** - Organize skills by type (custom, configuration, workflow, etc.)
+
 ### 🐛 Bug Fixes
 
 #### Tool Cards Display Fix

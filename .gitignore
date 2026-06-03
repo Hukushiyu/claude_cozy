@@ -42,9 +42,8 @@ remove-docs.sh
 certificate-base64.txt
 
 # Documentation (local only - not in repo)
-# ONLY allow: CLAUDE.md, CHANGELOG.md, README.md
+# ONLY allow: CHANGELOG.md, README.md (CLAUDE.md is local-only)
 *.md
-!CLAUDE.md
 !CHANGELOG.md
 !README.md
 
@@ -53,4 +52,6 @@ certificate-base64.txt
 .env
 .tauri-signing.key
 .tauri-signing.key.pub
+
+# Development reference files (local-only, NOT tracked by git)
 CLAUDE.md

@@ -206,73 +206,9 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     const projectPath = activeTab.projectPath;
     const model = activeTab.selectedModel;
 
-    // Check if this is a /usage command
-    if (content.trim() === '/usage') {
-      console.log('[chatStore] Detected /usage command');
-
-      // Add user message
-      const userMessage: Message = {
-        id: crypto.randomUUID(),
-        role: 'user',
-        content,
-        timestamp: new Date()
-      };
-
-      set(state => ({
-        tabStates: {
-          ...state.tabStates,
-          [activeTabId]: {
-            ...state.tabStates[activeTabId],
-            messages: [...state.tabStates[activeTabId].messages, userMessage]
-          }
-        }
-      }));
-
-      // Fetch usage data
-      try {
-        const usageData = await tauriAPI.getClaudeUsage();
-
-        if (usageData.error) {
-          throw new Error(usageData.error);
-        }
-
-        // Add usage message
-        const usageMessage: Message = {
-          id: crypto.randomUUID(),
-          role: 'usage',
-          content: usageData.raw_output,
-          timestamp: new Date()
-        };
-
-        set(state => ({
-          tabStates: {
-            ...state.tabStates,
-            [activeTabId]: {
-              ...state.tabStates[activeTabId],
-              messages: [...state.tabStates[activeTabId].messages, usageMessage],
-              isLoading: false,
-              isThinking: false,
-              thinkingStatus: null
-            }
-          }
-        }));
-      } catch (error) {
-        console.error('[chatStore] Usage command error:', error);
-        set(state => ({
-          tabStates: {
-            ...state.tabStates,
-            [activeTabId]: {
-              ...state.tabStates[activeTabId],
-              error: error instanceof Error ? error.message : 'Failed to fetch usage data',
-              isLoading: false,
-              isThinking: false,
-              thinkingStatus: null
-            }
-          }
-        }));
-      }
-      return;
-    }
+    // Note: /usage is a built-in Claude Code slash command
+    // We don't intercept it - just pass it through to Claude CLI
+    // Claude Code will handle it and return usage statistics
 
     try {
       console.log('[chatStore] Sending message to Claude CLI');

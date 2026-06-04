@@ -175,7 +175,8 @@ export const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(({ onSend, 
       setSuggestions(topSuggestions);
       setAutocompleteType('command');
       setTriggerPosition(cursorPos - lastWord.length);
-      setShowAutocomplete(true);
+      // Only show autocomplete if we have suggestions
+      setShowAutocomplete(topSuggestions.length > 0);
       setActiveIndex(0);
 
       // Update cursor position for dropdown
@@ -193,7 +194,8 @@ export const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(({ onSend, 
       setSuggestions(topSuggestions);
       setAutocompleteType('file');
       setTriggerPosition(cursorPos - lastWord.length);
-      setShowAutocomplete(true);
+      // Only show autocomplete if we have suggestions
+      setShowAutocomplete(topSuggestions.length > 0);
       setActiveIndex(0);
 
       // Update cursor position for dropdown
@@ -285,7 +287,7 @@ export const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(({ onSend, 
           onDrop={handleDrop}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
-          placeholder="Type your message... (Shift+Enter for new line)"
+          placeholder="Type / for commands"
           disabled={disabled}
           className={`flex-1 resize-none rounded-lg border px-4 py-3 focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors ${
             isDragOver ? 'bg-blue-50 border-blue-400' : ''

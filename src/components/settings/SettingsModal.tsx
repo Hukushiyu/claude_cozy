@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useSettingsStore, themes } from '../../stores/settingsStore';
+import { useSettingsStore } from '../../stores/settingsStore';
 import { Theme, ThemeColors } from '../../types/theme';
 import { ThemeEditor } from './ThemeEditor';
 import { ThemeImportExport } from './ThemeImportExport';

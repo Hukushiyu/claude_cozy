@@ -87,6 +87,10 @@ export const tauriAPI = {
     await invoke('kill_claude_process');
   },
 
+  confirmClose: async (): Promise<void> => {
+    await invoke('confirm_close');
+  },
+
   setPermissionMode: async (mode: string): Promise<void> => {
     await invoke('set_permission_mode', { mode });
   },

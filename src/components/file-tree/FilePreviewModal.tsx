@@ -1,7 +1,11 @@
 import { useEffect, useState } from 'react';
-import hljs from 'highlight.js';
-import 'highlight.js/styles/github.css';
-import { tauriAPI } from '../../utils/tauri-api';
+import CodeMirror from '@uiw/react-codemirror';
+import { oneDark } from '@codemirror/theme-one-dark';
+import { EditorView } from '@codemirror/view';
+import { useFileEditor, isImageFile, isTextFile } from '../../hooks/useFileEditor';
+import { getLanguageExtension } from '../../utils/codeMirrorLanguage';
+import { useSettingsStore } from '../../stores/settingsStore';
+import { ConfirmDialog } from '../common/ConfirmDialog';
 
 interface FilePreviewModalProps {
   isOpen: boolean;
@@ -11,223 +15,232 @@ interface FilePreviewModalProps {
 }
 
 export function FilePreviewModal({ isOpen, onClose, filePath, fileName }: FilePreviewModalProps) {
-  const [content, setContent] = useState<string>('');
-  const [imageData, setImageData] = useState<string>('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
+  const [pendingAction, setPendingAction] = useState<'close' | null>(null);
+  const { currentTheme } = useSettingsStore();
 
-  useEffect(() => {
-    if (!isOpen || !filePath) return;
+  const { content, imageData, isLoading, error, isDirty, setContent, save, discard, isSaving } = useFileEditor(
+    isOpen ? filePath : '',
+    fileName
+  );
 
-    const loadFileContent = async () => {
-      console.log('[FilePreview] Loading file:', filePath);
-      setIsLoading(true);
-      setError(null);
-      setContent('');
-      setImageData('');
-
-      try {
-        // Get extension from filename
-        const extension = fileName.split('.').pop()?.toLowerCase() || '';
-        console.log('[FilePreview] Extension:', extension);
-
-        // Define allowed text extensions
-        const textExtensions = [
-          'js', 'jsx', 'ts', 'tsx', 'py', 'rb', 'java', 'cpp', 'c', 'cs', 'go', 'rs',
-          'php', 'html', 'css', 'json', 'xml', 'yaml', 'yml', 'md', 'txt', 'sh', 'bash',
-          'sql', 'env', 'gitignore', 'log', 'config', 'ini', 'toml', 'vue', 'svelte'
-        ];
-        const imageExtensions = ['png', 'jpg', 'jpeg', 'gif', 'bmp', 'svg', 'webp', 'ico'];
-
-        const isTextFile = textExtensions.includes(extension);
-        const isImageFile = imageExtensions.includes(extension);
-
-        // Handle image files
-        if (isImageFile) {
-          console.log('[FilePreview] Loading image as base64...');
-          const base64 = await tauriAPI.readFileAsBase64(filePath);
-          const mimeType = extension === 'svg' ? 'image/svg+xml' : `image/${extension}`;
-          const dataUrl = `data:${mimeType};base64,${base64}`;
-          console.log('[FilePreview] Image data URL created, length:', dataUrl.length);
-          setImageData(dataUrl);
-          return;
-        }
-
-        // Check if file type is supported
-        if (!isTextFile) {
-          setError(`Preview not available for .${extension} files. Only text files supported.`);
-          return;
-        }
-
-        // For text files, read the content (no size check for now)
-        console.log('[FilePreview] Reading file content...');
-        const fileContent = await tauriAPI.readFile(filePath);
-        console.log('[FilePreview] File content length:', fileContent.length);
-
-        // Basic size check after reading
-        if (fileContent.length > 1024 * 1024) { // 1 MB
-          const sizeMB = (fileContent.length / (1024 * 1024)).toFixed(1);
-          setError(`File too large to preview (${sizeMB} MB). Text files over 1 MB cannot be previewed.`);
-          return;
-        }
-
-        console.log('[FilePreview] Setting content, preview should show');
-        setContent(fileContent);
-      } catch (err) {
-        console.error('[FilePreview] Error loading file:', err);
-        setError(err instanceof Error ? err.message : 'Failed to load file');
-        setContent('');
-        setImageData('');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadFileContent();
-  }, [isOpen, filePath, fileName]);
-
+  // Escape key — route through confirm if dirty
   useEffect(() => {
     if (!isOpen) return;
-
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        onClose();
+        e.preventDefault();
+        if (isDirty) {
+          setPendingAction('close');
+          setShowDiscardConfirm(true);
+        } else {
+          onClose();
+        }
       }
     };
-
     window.addEventListener('keydown', handleEscape);
     return () => window.removeEventListener('keydown', handleEscape);
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, isDirty]);
+
+  // Ctrl+S / Cmd+S to save
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = async (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        if (isDirty) {
+          try {
+            setSaveError(null);
+            await save();
+          } catch (err) {
+            setSaveError(err instanceof Error ? err.message : 'Save failed');
+          }
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, isDirty, save]);
 
   if (!isOpen) return null;
 
-  // Detect file type
-  const extension = fileName.split('.').pop()?.toLowerCase() || '';
-  const imageExtensions = ['png', 'jpg', 'jpeg', 'gif', 'bmp', 'svg', 'webp', 'ico'];
-  const isImage = imageExtensions.includes(extension);
-
-  const languageMap: Record<string, string> = {
-    'js': 'javascript',
-    'jsx': 'javascript',
-    'ts': 'typescript',
-    'tsx': 'typescript',
-    'py': 'python',
-    'rb': 'ruby',
-    'java': 'java',
-    'cpp': 'cpp',
-    'c': 'c',
-    'cs': 'csharp',
-    'go': 'go',
-    'rs': 'rust',
-    'php': 'php',
-    'html': 'html',
-    'css': 'css',
-    'json': 'json',
-    'xml': 'xml',
-    'yaml': 'yaml',
-    'yml': 'yaml',
-    'md': 'markdown',
-    'sh': 'bash',
-    'bash': 'bash',
-    'sql': 'sql',
+  const handleCloseRequest = () => {
+    if (isDirty) {
+      setPendingAction('close');
+      setShowDiscardConfirm(true);
+    } else {
+      onClose();
+    }
   };
 
-  const language = languageMap[extension] || 'plaintext';
-  let highlightedContent = content;
+  const handleDiscardConfirmed = () => {
+    discard();
+    setShowDiscardConfirm(false);
+    if (pendingAction === 'close') onClose();
+    setPendingAction(null);
+  };
 
-  if (content && language !== 'plaintext') {
+  const handleDiscardCancelled = () => {
+    setShowDiscardConfirm(false);
+    setPendingAction(null);
+  };
+
+  const handleSave = async () => {
     try {
-      highlightedContent = hljs.highlight(content, { language }).value;
-    } catch {
-      // If highlighting fails, use plain text
-      highlightedContent = content;
+      setSaveError(null);
+      await save();
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : 'Save failed');
     }
-  }
+  };
+
+  const ext = fileName.split('.').pop()?.toLowerCase() || '';
+  const isImage = isImageFile(fileName);
+  const isText = isTextFile(fileName);
+  const languageExt = getLanguageExtension(fileName);
+
+  const isDarkTheme = currentTheme.colors.bg < '#888888';
+  const cmTheme = isDarkTheme ? oneDark : EditorView.theme({
+    '&': { backgroundColor: '#ffffff', color: '#1f2937' },
+    '.cm-content': { caretColor: 'var(--theme-accent)' },
+    '.cm-cursor': { borderLeftColor: 'var(--theme-accent)' },
+    '.cm-gutters': { backgroundColor: '#f9fafb', borderRight: '1px solid #e5e7eb', color: '#6b7280' },
+    '.cm-activeLineGutter': { backgroundColor: '#f3f4f6' },
+    '.cm-activeLine': { backgroundColor: '#f9fafb' },
+    '.cm-selectionBackground, ::selection': { backgroundColor: 'rgba(139, 115, 85, 0.2)' },
+  });
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
-      <div
-        className="bg-white rounded-lg shadow-2xl w-[90%] h-[85vh] overflow-hidden flex flex-col"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="bg-claude-accent text-white px-6 py-4 flex justify-between items-center flex-shrink-0">
-          <div>
-            <h2 className="text-xl font-semibold">{fileName}</h2>
-            <p className="text-sm text-white/70 mt-1 truncate max-w-2xl">{filePath}</p>
-          </div>
-          <button
-            onClick={onClose}
-            className="text-white/80 hover:text-white text-2xl leading-none"
+    <>
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={handleCloseRequest}>
+        <div
+          className="rounded-lg shadow-2xl w-[90%] h-[85vh] overflow-hidden flex flex-col"
+          style={{ backgroundColor: 'var(--theme-bg)' }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Header */}
+          <div
+            className="px-6 py-4 flex justify-between items-center flex-shrink-0"
+            style={{ backgroundColor: 'var(--theme-accent)', color: '#fff' }}
           >
-            ×
-          </button>
-        </div>
-
-        {/* Content */}
-        <div className="flex-1 overflow-auto p-6 bg-gray-50">
-          {isLoading && (
-            <div className="flex items-center justify-center h-full">
-              <div className="text-gray-500">Loading file...</div>
-            </div>
-          )}
-
-          {error && (
-            <div className="flex items-center justify-center h-full">
-              <div className="text-center">
-                <div className="text-red-600 text-lg mb-2">⚠️ Error Loading File</div>
-                <div className="text-gray-600">{error}</div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                <h2 className="text-xl font-semibold truncate">{fileName}</h2>
+                {isDirty && (
+                  <span className="text-white/80 text-sm flex-shrink-0" title="Unsaved changes">●</span>
+                )}
               </div>
+              <p className="text-sm text-white/70 mt-1 truncate max-w-2xl">{filePath}</p>
             </div>
-          )}
-
-          {!isLoading && !error && isImage && imageData && (
-            <div className="flex items-center justify-center h-full bg-gray-100">
-              <img
-                src={imageData}
-                alt={fileName}
-                className="max-w-full max-h-full object-contain"
-                onError={() => {
-                  setError('Failed to load image');
-                  setImageData('');
-                }}
-              />
+            <div className="flex items-center gap-3 ml-4 flex-shrink-0">
+              {isDirty && isText && (
+                <button
+                  onClick={handleSave}
+                  disabled={isSaving}
+                  className="px-4 py-2 rounded text-sm font-medium transition-opacity"
+                  style={{ backgroundColor: 'rgba(255,255,255,0.2)', color: '#fff', opacity: isSaving ? 0.6 : 1 }}
+                  title="Save file (Ctrl+S)"
+                >
+                  {isSaving ? 'Saving...' : 'Save'}
+                </button>
+              )}
+              <button
+                onClick={handleCloseRequest}
+                className="text-white/80 hover:text-white text-2xl leading-none"
+              >
+                ×
+              </button>
             </div>
-          )}
-
-          {!isLoading && !error && content && !isImage && (
-            <pre className="bg-white border border-gray-200 rounded-lg p-4 overflow-auto text-sm">
-              <code
-                className={`hljs language-${language}`}
-                dangerouslySetInnerHTML={{ __html: highlightedContent }}
-              />
-            </pre>
-          )}
-
-          {!isLoading && !error && !content && (
-            <div className="flex items-center justify-center h-full">
-              <div className="text-gray-500">File is empty</div>
-            </div>
-          )}
-        </div>
-
-        {/* Footer */}
-        <div className="border-t border-gray-200 px-6 py-3 bg-gray-50 flex justify-between items-center flex-shrink-0">
-          <div className="text-sm text-gray-600">
-            {isImage && content ? (
-              `Image · ${extension.toUpperCase()}`
-            ) : content && !isImage ? (
-              `${content.split('\n').length} lines · ${content.length} bytes`
-            ) : ''}
           </div>
-          <button
-            onClick={onClose}
-            className="px-4 py-2 bg-claude-accent text-white rounded hover:opacity-90 transition-opacity"
+
+          {saveError && (
+            <div className="px-6 py-2 text-sm flex-shrink-0" style={{ backgroundColor: '#fef2f2', color: '#dc2626' }}>
+              Save failed: {saveError}
+            </div>
+          )}
+
+          {/* Content */}
+          <div className="flex-1 overflow-hidden min-h-0">
+            {isLoading && (
+              <div className="flex items-center justify-center h-full" style={{ color: 'var(--theme-textSecondary)' }}>
+                Loading file...
+              </div>
+            )}
+
+            {error && (
+              <div className="flex items-center justify-center h-full">
+                <div className="text-center">
+                  <div className="text-lg mb-2" style={{ color: '#dc2626' }}>⚠️ Error Loading File</div>
+                  <div style={{ color: 'var(--theme-textSecondary)' }}>{error}</div>
+                </div>
+              </div>
+            )}
+
+            {!isLoading && !error && isImage && imageData && (
+              <div className="flex items-center justify-center h-full" style={{ backgroundColor: 'var(--theme-hover)' }}>
+                <img src={imageData} alt={fileName} className="max-w-full max-h-full object-contain" />
+              </div>
+            )}
+
+            {!isLoading && !error && isText && (
+              <CodeMirror
+                value={content}
+                height="100%"
+                extensions={[...(languageExt ? [languageExt] : []), EditorView.lineWrapping]}
+                theme={cmTheme}
+                onChange={setContent}
+                basicSetup={{
+                  lineNumbers: true,
+                  foldGutter: true,
+                  highlightActiveLine: true,
+                  highlightSelectionMatches: true,
+                  bracketMatching: true,
+                  closeBrackets: true,
+                  autocompletion: true,
+                  indentOnInput: true,
+                }}
+                style={{ height: '100%', fontSize: '13px' }}
+              />
+            )}
+
+            {!isLoading && !error && !content && !imageData && (
+              <div className="flex items-center justify-center h-full" style={{ color: 'var(--theme-textSecondary)' }}>
+                File is empty
+              </div>
+            )}
+          </div>
+
+          {/* Footer */}
+          <div
+            className="border-t px-6 py-3 flex justify-between items-center flex-shrink-0"
+            style={{ borderColor: 'var(--theme-border)', backgroundColor: 'var(--theme-hover)' }}
           >
-            Close
-          </button>
+            <div className="text-sm" style={{ color: 'var(--theme-textSecondary)' }}>
+              {isImage ? `Image · ${ext.toUpperCase()}` : content ? `${content.split('\n').length} lines · ${content.length} bytes${isDirty ? ' · Unsaved changes' : ''}` : ''}
+            </div>
+            <button
+              onClick={handleCloseRequest}
+              className="px-4 py-2 rounded transition-opacity text-white"
+              style={{ backgroundColor: 'var(--theme-accent)' }}
+              onMouseEnter={(e) => { e.currentTarget.style.opacity = '0.85'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.opacity = '1'; }}
+            >
+              Close
+            </button>
+          </div>
         </div>
       </div>
-    </div>
+
+      <ConfirmDialog
+        isOpen={showDiscardConfirm}
+        title="Discard unsaved changes?"
+        message="You have unsaved changes to this file. They will be permanently lost."
+        confirmLabel="Discard"
+        cancelLabel="Keep editing"
+        onConfirm={handleDiscardConfirmed}
+        onCancel={handleDiscardCancelled}
+      />
+    </>
   );
 }

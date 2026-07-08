@@ -1,10 +1,24 @@
 import { CommandSuggestion, FileSuggestion } from '../types/chat';
 import type { FileNode } from '../types/ipc';
 
+// Descriptions for Claude CLI built-in commands (baked into the CLI binary, no SKILL.md)
+export const BUILTIN_COMMANDS: CommandSuggestion[] = [
+  { type: 'command', commandType: 'builtin', name: '/usage',    description: 'Show token usage and cost for the current session', icon: '📊' },
+  { type: 'command', commandType: 'builtin', name: '/clear',    description: 'Clear the screen and start a fresh turn', icon: '🗑️' },
+  { type: 'command', commandType: 'builtin', name: '/compact',  description: 'Compact conversation context to save tokens', icon: '📦' },
+  { type: 'command', commandType: 'builtin', name: '/context',  description: 'Show current context window usage', icon: '📐' },
+  { type: 'command', commandType: 'builtin', name: '/init',     description: 'Initialize a new CLAUDE.md file with codebase documentation', icon: '📋' },
+  { type: 'command', commandType: 'builtin', name: '/heapdump', description: 'Generate a heap dump for debugging', icon: '🔧' },
+  { type: 'command', commandType: 'builtin', name: '/reload-skills', description: 'Reload all skills from disk', icon: '🔄' },
+  { type: 'command', commandType: 'builtin', name: '/insights', description: 'Show project insights and statistics', icon: '💡' },
+  { type: 'command', commandType: 'builtin', name: '/goal',     description: 'Set or view the current session goal', icon: '🎯' },
+];
+
 /**
  * All available slash commands and skills
  * Commands are divided into:
  * - App commands: UI-level commands handled by the app
+ * - Builtins: Claude CLI built-in commands (no SKILL.md on disk)
  * - Skills: Claude CLI skills that get sent to Claude for execution
  */
 export const SLASH_COMMANDS: CommandSuggestion[] = [

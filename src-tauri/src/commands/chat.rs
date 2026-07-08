@@ -10,6 +10,84 @@ use crate::commands::permissions::PermissionMode;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
+pub struct PluginSkillInfo {
+    pub name: String,
+    pub description: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct PluginInfo {
+    pub name: String,
+    pub path: String,
+    pub skills: Vec<PluginSkillInfo>,
+}
+
+fn parse_skill_frontmatter(content: &str) -> (String, String) {
+    let mut name = String::new();
+    let mut description = String::new();
+
+    if content.starts_with("---") {
+        if let Some(end_pos) = content[3..].find("\n---") {
+            let frontmatter = &content[3..end_pos + 3];
+            for line in frontmatter.lines() {
+                let line = line.trim();
+                if let Some(val) = line.strip_prefix("name:") {
+                    name = val.trim().to_string();
+                } else if let Some(val) = line.strip_prefix("description:") {
+                    description = val.trim().to_string();
+                }
+            }
+        }
+    }
+
+    (name, description)
+}
+
+async fn scan_plugin_skills(plugin_path: &str) -> Vec<PluginSkillInfo> {
+    let mut skills = Vec::new();
+    let path = std::path::Path::new(plugin_path);
+
+    // Check skills/ directory first
+    let skills_dir = path.join("skills");
+    if let Ok(mut dir_entries) = tokio::fs::read_dir(&skills_dir).await {
+        while let Ok(Some(entry)) = dir_entries.next_entry().await {
+            let skill_md = entry.path().join("SKILL.md");
+            if tokio::fs::metadata(&skill_md).await.is_ok() {
+                if let Ok(content) = tokio::fs::read_to_string(&skill_md).await {
+                    let (name, description) = parse_skill_frontmatter(&content);
+                    if !name.is_empty() {
+                        skills.push(PluginSkillInfo {
+                            name: if name.starts_with('/') { name } else { format!("/{}", name) },
+                            description,
+                        });
+                    }
+                }
+            }
+        }
+    }
+
+    // Fall back to root SKILL.md for single-skill plugins
+    if skills.is_empty() {
+        let root_skill_md = path.join("SKILL.md");
+        if tokio::fs::metadata(&root_skill_md).await.is_ok() {
+            if let Ok(content) = tokio::fs::read_to_string(&root_skill_md).await {
+                let (name, description) = parse_skill_frontmatter(&content);
+                if !name.is_empty() {
+                    skills.push(PluginSkillInfo {
+                        name: if name.starts_with('/') { name } else { format!("/{}", name) },
+                        description,
+                    });
+                }
+            }
+        }
+    }
+
+    skills
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct StreamEvent {
     pub event_type: String,
     pub content: Option<String>,
@@ -410,12 +488,36 @@ pub async fn send_message(
                         }
                     }
                     "system" => {
-                        // Extract session_id from init event
+                        // Extract session_id and plugins from init event
                         if let Some(subtype) = event.get("subtype").and_then(|s| s.as_str()) {
                             if subtype == "init" {
                                 if let Some(session_id) = event.get("session_id").and_then(|id| id.as_str()) {
                                     println!("[CHAT] Session started: {}", session_id);
                                     let _ = app.emit("chat:session-id", session_id);
+                                }
+
+                                // Scan plugins and emit plugin info to frontend
+                                if let Some(plugins_array) = event.get("plugins").and_then(|p| p.as_array()) {
+                                    let app_clone = app.clone();
+                                    let plugin_entries: Vec<(String, String)> = plugins_array.iter()
+                                        .filter_map(|p| {
+                                            let name = p.get("name")?.as_str()?.to_string();
+                                            let path = p.get("path")?.as_str()?.to_string();
+                                            Some((name, path))
+                                        })
+                                        .collect();
+
+                                    tokio::spawn(async move {
+                                        let mut plugin_infos: Vec<PluginInfo> = Vec::new();
+                                        for (name, path) in plugin_entries {
+                                            println!("[CHAT] Scanning plugin: {} at {}", name, path);
+                                            let skills = scan_plugin_skills(&path).await;
+                                            println!("[CHAT] Found {} skills in plugin {}", skills.len(), name);
+                                            plugin_infos.push(PluginInfo { name, path, skills });
+                                        }
+                                        let _ = app_clone.emit("chat:plugins-loaded", plugin_infos);
+                                        println!("[CHAT] Emitted chat:plugins-loaded");
+                                    });
                                 }
                             }
                         }
@@ -506,6 +608,23 @@ pub fn kill_claude_process() -> Result<(), String> {
     }
 
     Ok(())
+}
+
+/// Called by frontend after user confirms close (saved or discarded all dirty files).
+/// Kills any running Claude process then destroys the window.
+#[tauri::command]
+pub fn confirm_close(window: tauri::WebviewWindow) -> Result<(), String> {
+    println!("[APP] confirm_close called - killing Claude process and closing window");
+
+    // Kill any in-flight Claude process
+    let mut process = CLAUDE_PROCESS.lock().unwrap();
+    if let Some(mut child) = process.take() {
+        println!("[APP] Killing active Claude process before close");
+        let _ = child.start_kill();
+    }
+
+    // Destroy the window — bypasses CloseRequested so no infinite loop
+    window.destroy().map_err(|e| format!("Failed to close window: {}", e))
 }
 
 #[tauri::command]

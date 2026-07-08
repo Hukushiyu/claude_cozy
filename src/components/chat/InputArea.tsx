@@ -3,7 +3,7 @@ import { useDragStore } from '../../stores/dragStore';
 import { useTabStore } from '../../stores/tabStore';
 import { useSkillsStore } from '../../stores/skillsStore';
 import { AutocompleteDropdown } from './AutocompleteDropdown';
-import { Suggestion } from '../../types/chat';
+import { StructuredRow, CommandSuggestion, PluginInfo } from '../../types/chat';
 import { flattenFileTree } from '../../utils/suggestions';
 import { fuzzySearch } from '../../utils/fuzzySearch';
 import { getCaretCoordinates } from '../../utils/caretPosition';
@@ -17,6 +17,47 @@ export interface InputAreaHandle {
   focus: () => void;
 }
 
+function buildStructuredRows(
+  filteredCommands: CommandSuggestion[],
+  plugins: PluginInfo[]
+): StructuredRow[] {
+  const rows: StructuredRow[] = [];
+  const pluginsByCmd = new Map<string, PluginInfo>();
+  for (const plugin of plugins) {
+    pluginsByCmd.set(`/${plugin.name}`, plugin);
+  }
+
+  const pluginsEmitted = new Set<string>();
+
+  for (const cmd of filteredCommands) {
+    const plugin = pluginsByCmd.get(cmd.name);
+    if (plugin) {
+      if (!pluginsEmitted.has(cmd.name)) {
+        pluginsEmitted.add(cmd.name);
+        rows.push({
+          kind: 'plugin-header',
+          pluginName: plugin.name,
+          commandName: cmd.name,
+          description: cmd.description,
+          skills: plugin.skills,
+        });
+        for (const skill of plugin.skills) {
+          rows.push({
+            kind: 'skill-row',
+            name: skill.name,
+            description: skill.description,
+            parentPlugin: plugin.name,
+          });
+        }
+      }
+    } else {
+      rows.push({ kind: 'flat-command', suggestion: cmd });
+    }
+  }
+
+  return rows;
+}
+
 export const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(({ onSend, disabled = false }, ref) => {
   const [input, setInput] = useState('');
   const [isDragOver, setIsDragOver] = useState(false);
@@ -26,25 +67,20 @@ export const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(({ onSend, 
   const activeTab = getActiveTab();
   const projectPath = activeTab?.projectPath || null;
   const { fileTree } = getActiveFileTreeState();
-  const { getAllSkills } = useSkillsStore();
+  const { getAllSkills, getPlugins } = useSkillsStore();
 
-  // Autocomplete state
   const [showAutocomplete, setShowAutocomplete] = useState(false);
   const [autocompleteType, setAutocompleteType] = useState<'command' | 'file' | null>(null);
-  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  const [structuredRows, setStructuredRows] = useState<StructuredRow[]>([]);
   const [activeIndex, setActiveIndex] = useState(0);
   const [cursorPosition, setCursorPosition] = useState({ top: 0, left: 0 });
   const [triggerPosition, setTriggerPosition] = useState(0);
 
-  // Expose focus method to parent via ref
   useImperativeHandle(ref, () => ({
     focus: () => {
-      console.log('[InputArea] focus() called via ref');
       if (textareaRef.current) {
-        // Force focus by simulating a click first (helps "wake up" the input)
         textareaRef.current.click();
         textareaRef.current.focus();
-        // Also try to set selection to ensure it's truly focused
         const length = textareaRef.current.value.length;
         textareaRef.current.setSelectionRange(length, length);
       }
@@ -55,95 +91,57 @@ export const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(({ onSend, 
     if (input.trim() && !disabled) {
       onSend(input.trim());
       setInput('');
-      // Focus back to input after sending
-      setTimeout(() => {
-        textareaRef.current?.focus();
-      }, 0);
+      setTimeout(() => textareaRef.current?.focus(), 0);
     }
   };
 
   const handleDrop = (e: React.DragEvent<HTMLTextAreaElement>) => {
-    console.log('[InputArea] Drop event triggered');
     e.preventDefault();
     setIsDragOver(false);
-
-    // Try to get data from HTML5 drag API first
     let fileReference = e.dataTransfer.getData('text/plain');
-    console.log('[InputArea] Dropped data from dataTransfer:', fileReference);
-
-    // Fallback to global store if HTML5 API didn't work (Tauri issue)
-    if (!fileReference && draggedFile) {
-      fileReference = draggedFile;
-      console.log('[InputArea] Using fallback from dragStore:', fileReference);
-    }
-
+    if (!fileReference && draggedFile) fileReference = draggedFile;
     if (fileReference && fileReference.startsWith('@')) {
-      console.log('[InputArea] Valid file reference, inserting...');
-      // Insert at cursor position or append
       const textarea = textareaRef.current;
       if (textarea) {
         const cursorPos = textarea.selectionStart;
         const textBefore = input.substring(0, cursorPos);
         const textAfter = input.substring(cursorPos);
-
-        // Add space before if needed
         const needsSpaceBefore = textBefore.length > 0 && !textBefore.endsWith(' ');
         const prefix = needsSpaceBefore ? ' ' : '';
-
         setInput(textBefore + prefix + fileReference + ' ' + textAfter);
-
-        // Set cursor after inserted text
         setTimeout(() => {
           const newCursorPos = cursorPos + prefix.length + fileReference.length + 1;
           textarea.setSelectionRange(newCursorPos, newCursorPos);
           textarea.focus();
         }, 0);
       }
-    } else {
-      console.log('[InputArea] Invalid or empty file reference');
     }
   };
 
   const handleDragOver = (e: React.DragEvent<HTMLTextAreaElement>) => {
-    console.log('[InputArea] Drag over detected');
     e.preventDefault();
     setIsDragOver(true);
   };
 
   const handleDragLeave = (e: React.DragEvent<HTMLTextAreaElement>) => {
     e.preventDefault();
-    // Only reset if we're actually leaving the textarea element
-    if (e.currentTarget === e.target) {
-      setIsDragOver(false);
-    }
+    if (e.currentTarget === e.target) setIsDragOver(false);
   };
 
-  // Auto-focus when component becomes enabled (after loading completes)
   useEffect(() => {
-    console.log('[InputArea] disabled changed to:', disabled);
-    if (!disabled && textareaRef.current) {
-      console.log('[InputArea] Focusing input');
-      textareaRef.current.focus();
-    }
+    if (!disabled && textareaRef.current) textareaRef.current.focus();
   }, [disabled]);
 
-  // Watch for file references from the drag store
   useEffect(() => {
     if (draggedFile && draggedFile.startsWith('@')) {
-      console.log('[InputArea] File reference received from store:', draggedFile);
       const textarea = textareaRef.current;
       if (textarea) {
         const cursorPos = textarea.selectionStart;
         const textBefore = input.substring(0, cursorPos);
         const textAfter = input.substring(cursorPos);
-
-        // Add space before if needed
         const needsSpaceBefore = textBefore.length > 0 && !textBefore.endsWith(' ');
         const prefix = needsSpaceBefore ? ' ' : '';
-
         setInput(textBefore + prefix + draggedFile + ' ' + textAfter);
-
-        // Set cursor after inserted text
         setTimeout(() => {
           const newCursorPos = cursorPos + prefix.length + draggedFile.length + 1;
           textarea.setSelectionRange(newCursorPos, newCursorPos);
@@ -156,74 +154,82 @@ export const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(({ onSend, 
   const handleInputChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
     const newValue = e.target.value;
     const cursorPos = e.target.selectionStart;
-
     setInput(newValue);
 
-    // Check for trigger characters (/ or @) at start of word
     const textBeforeCursor = newValue.substring(0, cursorPos);
     const lastWord = textBeforeCursor.split(/\s/).pop() || '';
 
     if (lastWord.startsWith('/')) {
-      // Command autocomplete - merge built-in and custom skills
       const query = lastWord.substring(1);
       const allCommands = getAllSkills();
-      console.log('[InputArea] Autocomplete trigger - query:', query, 'allCommands:', allCommands.length);
-      const filtered = fuzzySearch(query, allCommands);
-      const topSuggestions = filtered.slice(0, 50).map(m => m.item);
-      console.log('[InputArea] Filtered suggestions:', topSuggestions.length, topSuggestions.map(s => s.name));
+      const plugins = getPlugins();
 
-      setSuggestions(topSuggestions);
+      // Fuzzy-filter flat commands
+      const filtered = fuzzySearch(query, allCommands).slice(0, 50).map(m => m.item).filter((s): s is CommandSuggestion => s.type === 'command');
+
+      // Inject plugin entries that match query but aren't already in filtered list
+      for (const plugin of plugins) {
+        const cmdName = `/${plugin.name}`;
+        const matchesQuery = query === '' || cmdName.toLowerCase().includes(query.toLowerCase());
+        if (matchesQuery && !filtered.find(c => c.name === cmdName)) {
+          filtered.push({
+            type: 'command' as const,
+            commandType: 'skill' as const,
+            name: cmdName,
+            description: `Plugin: ${plugin.name}`,
+            icon: '🔌',
+          });
+        }
+      }
+
+      const rows = buildStructuredRows(filtered, plugins);
+
+      setStructuredRows(rows);
       setAutocompleteType('command');
       setTriggerPosition(cursorPos - lastWord.length);
-      // Only show autocomplete if we have suggestions
-      setShowAutocomplete(topSuggestions.length > 0);
+      setShowAutocomplete(rows.length > 0);
       setActiveIndex(0);
 
-      // Update cursor position for dropdown
       if (textareaRef.current) {
-        const pos = getCaretCoordinates(textareaRef.current);
-        setCursorPosition(pos);
+        setCursorPosition(getCaretCoordinates(textareaRef.current));
       }
     } else if (lastWord.startsWith('@') && projectPath && fileTree.length > 0) {
-      // File autocomplete
       const query = lastWord.substring(1);
       const fileList = flattenFileTree(fileTree, projectPath);
-      const filtered = fuzzySearch(query, fileList);
-      const topSuggestions = filtered.slice(0, 50).map(m => m.item);
+      const filtered = fuzzySearch(query, fileList).slice(0, 50).map(m => m.item);
+      const rows: StructuredRow[] = filtered.map(f => ({ kind: 'flat-command' as const, suggestion: f }));
 
-      setSuggestions(topSuggestions);
+      setStructuredRows(rows);
       setAutocompleteType('file');
       setTriggerPosition(cursorPos - lastWord.length);
-      // Only show autocomplete if we have suggestions
-      setShowAutocomplete(topSuggestions.length > 0);
+      setShowAutocomplete(rows.length > 0);
       setActiveIndex(0);
 
-      // Update cursor position for dropdown
       if (textareaRef.current) {
-        const pos = getCaretCoordinates(textareaRef.current);
-        setCursorPosition(pos);
+        setCursorPosition(getCaretCoordinates(textareaRef.current));
       }
     } else {
       setShowAutocomplete(false);
     }
   };
 
-  const handleSuggestionSelect = (suggestion: Suggestion) => {
+  const handleSuggestionSelect = (row: StructuredRow) => {
     const textBefore = input.substring(0, triggerPosition);
     const textAfter = input.substring(textareaRef.current!.selectionStart);
 
     let replacement = '';
-    if (suggestion.type === 'command') {
-      replacement = suggestion.name + ' ';
-    } else {
-      replacement = '@' + suggestion.relativePath + ' ';
+    if (row.kind === 'plugin-header') {
+      replacement = row.commandName + ' ';
+    } else if (row.kind === 'skill-row') {
+      replacement = row.name + ' ';
+    } else if (row.kind === 'flat-command') {
+      const s = row.suggestion;
+      replacement = s.type === 'command' ? s.name + ' ' : '@' + s.relativePath + ' ';
     }
 
-    const newInput = textBefore + replacement + textAfter;
-    setInput(newInput);
+    setInput(textBefore + replacement + textAfter);
     setShowAutocomplete(false);
 
-    // Position cursor after replacement
     const newCursorPos = textBefore.length + replacement.length;
     setTimeout(() => {
       textareaRef.current?.setSelectionRange(newCursorPos, newCursorPos);
@@ -232,23 +238,23 @@ export const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(({ onSend, 
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
-    // If autocomplete is open, intercept navigation keys
     if (showAutocomplete) {
-      if (e.key === 'ArrowDown') {
+      const maxIndex = structuredRows.length - 1;
+
+      if (e.key === 'ArrowDown' || (e.key === 'Tab' && !e.shiftKey)) {
         e.preventDefault();
-        setActiveIndex(prev => Math.min(prev + 1, suggestions.length - 1));
+        setActiveIndex(prev => Math.min(prev + 1, maxIndex));
         return;
       }
-      if (e.key === 'ArrowUp') {
+      if (e.key === 'ArrowUp' || (e.key === 'Tab' && e.shiftKey)) {
         e.preventDefault();
         setActiveIndex(prev => Math.max(prev - 1, 0));
         return;
       }
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
-        if (suggestions.length > 0) {
-          handleSuggestionSelect(suggestions[activeIndex]);
-        }
+        const row = structuredRows[activeIndex];
+        if (row) handleSuggestionSelect(row);
         return;
       }
       if (e.key === 'Escape') {
@@ -258,20 +264,17 @@ export const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(({ onSend, 
       }
     }
 
-    // Original Enter key handling (send message)
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
     }
   };
 
-  // Listen for hover events from dropdown
   useEffect(() => {
     const handleHover = (e: Event) => {
       const customEvent = e as CustomEvent;
       setActiveIndex(customEvent.detail);
     };
-
     window.addEventListener('autocomplete-hover', handleHover);
     return () => window.removeEventListener('autocomplete-hover', handleHover);
   }, []);
@@ -287,7 +290,7 @@ export const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(({ onSend, 
           onDrop={handleDrop}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
-          placeholder="Type / for commands"
+          placeholder="Type / for commands or @ to add files to chat"
           disabled={disabled}
           className={`flex-1 resize-none rounded-lg border px-4 py-3 focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors ${
             isDragOver ? 'bg-blue-50 border-blue-400' : ''
@@ -299,14 +302,10 @@ export const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(({ onSend, 
             boxShadow: isDragOver ? 'var(--theme-accent) 0px 0px 0px 2px' : 'var(--theme-accent) 0px 0px 0px 0px'
           }}
           onFocus={(e) => {
-            if (!isDragOver) {
-              e.currentTarget.style.boxShadow = `var(--theme-accent) 0px 0px 0px 2px`;
-            }
+            if (!isDragOver) e.currentTarget.style.boxShadow = `var(--theme-accent) 0px 0px 0px 2px`;
           }}
           onBlur={(e) => {
-            if (!isDragOver) {
-              e.currentTarget.style.boxShadow = `var(--theme-accent) 0px 0px 0px 0px`;
-            }
+            if (!isDragOver) e.currentTarget.style.boxShadow = `var(--theme-accent) 0px 0px 0px 0px`;
           }}
           rows={3}
         />
@@ -317,9 +316,7 @@ export const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(({ onSend, 
           className="px-6 py-3 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
           style={{ backgroundColor: 'var(--theme-accent)' }}
           onMouseEnter={(e) => {
-            if (!disabled && input.trim()) {
-              e.currentTarget.style.backgroundColor = 'var(--theme-accentHover)';
-            }
+            if (!disabled && input.trim()) e.currentTarget.style.backgroundColor = 'var(--theme-accentHover)';
           }}
           onMouseLeave={(e) => {
             e.currentTarget.style.backgroundColor = 'var(--theme-accent)';
@@ -331,13 +328,12 @@ export const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(({ onSend, 
 
       <div className="text-xs mt-2" style={{ color: 'var(--theme-textSecondary)' }}>
         Press Enter to send, Shift+Enter for new line
-        {showAutocomplete && ' • Use ↑↓ to navigate, Enter to select, Esc to close'}
+        {showAutocomplete && ' • Tab/↑↓ to navigate, Enter to select, Esc to close'}
       </div>
 
-      {/* Autocomplete dropdown */}
       {showAutocomplete && (
         <AutocompleteDropdown
-          suggestions={suggestions}
+          rows={structuredRows}
           activeIndex={activeIndex}
           onSelect={handleSuggestionSelect}
           onClose={() => setShowAutocomplete(false)}

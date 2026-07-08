@@ -2,6 +2,54 @@
 
 All notable changes to Claude Cozy will be documented in this file.
 
+## [0.9.0] - 2026-07-08
+
+### 🎉 Major Features
+
+#### In-App File Editor (CodeMirror 6)
+- **Full code editor** - Double-click any file in the tree to open it in a full CodeMirror 6 editor
+- **Syntax highlighting** - 15 languages supported: JavaScript, TypeScript, Python, Rust, Java, C/C++, CSS, HTML, JSON, XML, YAML, SQL, Markdown, PHP, and more
+- **Inner file tabs** - Up to 5 file editor tabs open per project tab, alongside the Chat tab
+- **Tab bar** - New inner tab strip between the project tabs and content area (Chat + open files)
+- **Unsaved changes indicator** - Dot (●) appears on tab and editor header when file has unsaved edits
+- **Save with Ctrl+S** - Or use the Save button in the editor toolbar
+- **Persistent edit buffers** - Unsaved edits survive tab switches, panel closes, and component remounts (Zustand + localStorage, 500KB cap)
+- **Edit button in preview panel** - Single-click preview shows "Edit" button to open editor; non-editable files show "Expand" instead
+
+#### File Preview Improvements
+- **PDF preview** - Native WebView rendering via blob URL — click any PDF in the file tree to preview it inline
+- **Image preview** - PNG, JPG, GIF, SVG, WebP and more rendered in both preview panel and editor tab
+- **Read-only preview** - Single-click opens a clean read-only CodeMirror preview in the sidebar panel
+- **Slide-close animation** - Preview panel slides left off screen (0.5s) when Edit/Expand is clicked; editor tab opens instantly
+
+#### Unsaved Changes Protection
+- **App-close prompt** - Closing the app with unsaved files shows a modal listing all dirty files
+  - **Save All & Close** - Writes all dirty files to disk then closes
+  - **Discard & Close** - Clears all edit buffers (store + localStorage) then closes
+  - **Cancel** - Returns to the app
+- **File switch prompt** - Switching files in the preview panel with unsaved changes asks to discard
+- **Tab close prompt** - Closing a dirty editor tab asks to save or discard
+- **Custom dialogs** - All prompts use a React modal (Tauri blocks native `window.confirm`)
+
+#### Plugin-Aware Command Autocomplete
+- **Plugin grouping** - Type `/` to see commands grouped by plugin with a `[PLUGIN]` badge
+- **Skill sub-rows** - Plugin skills appear indented under their parent plugin, always expanded
+- **Built-in command descriptions** - `/usage`, `/clear`, `/compact`, `/context`, `/init` and more shown with descriptions and `[BUILTIN]` badge
+- **Tab navigation** - Tab/Shift+Tab moves through plugin headers, skill sub-rows, and flat commands
+- **Always-expanded** - All plugin skills visible immediately, no collapsing
+
+### 🎨 UI/UX Improvements
+
+- **Input placeholder updated** - Chat input now reads "Type / for commands or @ to add files to chat"
+- **Preview panel header cleaned up** - Removed "double-click to edit" hint text, removed emoji from button
+- **Edit vs Expand** - Preview panel button shows "Edit" for editable files, "Expand" for images/PDFs
+- **Slide animation** - Preview panel closes with a smooth 0.5s slide-left when opening editor
+
+### 🐛 Bug Fixes
+
+- **`window.confirm` crash** - Replaced all native dialog calls with custom React modals (Tauri blocks `window.confirm` entirely — previously caused silent crashes and lost discard actions)
+- **Discard & Close not scrubbing buffers** - Fixed: discard now calls `discardBuffer()` on all dirty paths, clearing both Zustand store and localStorage so edits don't reappear on next launch
+
 ## [0.8.4] - 2026-06-03
 
 ### 🎨 UI/UX Improvements

@@ -52,11 +52,11 @@ export type GroupedChatItem =
   | { type: 'tool-group'; data: ConsolidatedTool[]; timestamp: Date; id: string };
 
 // Types for autocomplete suggestions
-export type CommandType = 'app' | 'skill';
+export type CommandType = 'app' | 'skill' | 'builtin';
 
 export interface CommandSuggestion {
   type: 'command';
-  commandType: CommandType;  // Distinguish app commands vs Claude CLI skills
+  commandType: CommandType;  // Distinguish app commands vs Claude CLI skills vs builtins
   name: string;
   description: string;
   icon: string;
@@ -74,3 +74,21 @@ export interface FileSuggestion {
 }
 
 export type Suggestion = CommandSuggestion | FileSuggestion;
+
+// Plugin types (from CLI system/init event)
+export interface PluginSkillInfo {
+  name: string;
+  description: string;
+}
+
+export interface PluginInfo {
+  name: string;
+  path: string;
+  skills: PluginSkillInfo[];
+}
+
+// Structured suggestion rows for plugin-aware autocomplete
+export type StructuredRow =
+  | { kind: 'plugin-header'; pluginName: string; commandName: string; description: string; skills: PluginSkillInfo[] }
+  | { kind: 'skill-row';     name: string; description: string; parentPlugin: string }
+  | { kind: 'flat-command';  suggestion: Suggestion };

@@ -1,7 +1,10 @@
-import { useEffect, useState, useCallback } from 'react';
-import hljs from 'highlight.js';
-import 'highlight.js/styles/github.css';
-import { tauriAPI } from '../../utils/tauri-api';
+import { useCallback, useEffect, useState } from 'react';
+import CodeMirror from '@uiw/react-codemirror';
+import { oneDark } from '@codemirror/theme-one-dark';
+import { EditorView } from '@codemirror/view';
+import { useFileEditor, isImageFile, isTextFile, isPdfFile } from '../../hooks/useFileEditor';
+import { getLanguageExtension } from '../../utils/codeMirrorLanguage';
+import { useSettingsStore } from '../../stores/settingsStore';
 
 interface FilePreviewPanelProps {
   filePath: string;
@@ -9,21 +12,6 @@ interface FilePreviewPanelProps {
   onClose: () => void;
   onExpand: () => void;
 }
-
-const TEXT_EXTENSIONS = [
-  'js', 'jsx', 'ts', 'tsx', 'py', 'rb', 'java', 'cpp', 'c', 'cs', 'go', 'rs',
-  'php', 'html', 'css', 'json', 'xml', 'yaml', 'yml', 'md', 'txt', 'sh', 'bash',
-  'sql', 'env', 'gitignore', 'log', 'config', 'ini', 'toml', 'vue', 'svelte'
-];
-const IMAGE_EXTENSIONS = ['png', 'jpg', 'jpeg', 'gif', 'bmp', 'svg', 'webp', 'ico'];
-
-const LANGUAGE_MAP: Record<string, string> = {
-  'js': 'javascript', 'jsx': 'javascript', 'ts': 'typescript', 'tsx': 'typescript',
-  'py': 'python', 'rb': 'ruby', 'java': 'java', 'cpp': 'cpp', 'c': 'c',
-  'cs': 'csharp', 'go': 'go', 'rs': 'rust', 'php': 'php', 'html': 'html',
-  'css': 'css', 'json': 'json', 'xml': 'xml', 'yaml': 'yaml', 'yml': 'yaml',
-  'md': 'markdown', 'sh': 'bash', 'bash': 'bash', 'sql': 'sql',
-};
 
 const PANEL_MIN = 100;
 const PANEL_MAX = 600;
@@ -33,10 +21,19 @@ export function FilePreviewPanel({ filePath, fileName, onClose, onExpand }: File
     const saved = localStorage.getItem('previewPanelHeight');
     return saved ? parseInt(saved, 10) : 280;
   });
-  const [content, setContent] = useState<string>('');
-  const [imageData, setImageData] = useState<string>('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [isClosing, setIsClosing] = useState(false);
+  const { currentTheme } = useSettingsStore();
+
+  const animateClose = (callback?: () => void) => {
+    if (callback) callback(); // fire immediately (e.g. open editor tab)
+    setIsClosing(true);
+    setTimeout(() => {
+      setIsClosing(false);
+      onClose();
+    }, 500);
+  };
+
+  const { content, imageData, pdfBlobUrl, isLoading, error } = useFileEditor(filePath, fileName);
 
   useEffect(() => {
     localStorage.setItem('previewPanelHeight', String(panelHeight));
@@ -51,7 +48,6 @@ export function FilePreviewPanel({ filePath, fileName, onClose, onExpand }: File
       const delta = startY - ev.clientY;
       setPanelHeight(Math.min(PANEL_MAX, Math.max(PANEL_MIN, startHeight + delta)));
     };
-
     const onMouseUp = (ev: MouseEvent) => {
       const delta = startY - ev.clientY;
       setPanelHeight(Math.min(PANEL_MAX, Math.max(PANEL_MIN, startHeight + delta)));
@@ -67,79 +63,56 @@ export function FilePreviewPanel({ filePath, fileName, onClose, onExpand }: File
     window.addEventListener('mouseup', onMouseUp);
   }, [panelHeight]);
 
-  useEffect(() => {
-    if (!filePath) return;
+  const isImage = isImageFile(fileName);
+  const isText = isTextFile(fileName);
+  const isPdf = isPdfFile(fileName);
+  const languageExt = getLanguageExtension(fileName);
 
-    const load = async () => {
-      setIsLoading(true);
-      setError(null);
-      setContent('');
-      setImageData('');
-
-      try {
-        const ext = fileName.split('.').pop()?.toLowerCase() || '';
-
-        if (IMAGE_EXTENSIONS.includes(ext)) {
-          const base64 = await tauriAPI.readFileAsBase64(filePath);
-          const mimeType = ext === 'svg' ? 'image/svg+xml' : `image/${ext}`;
-          setImageData(`data:${mimeType};base64,${base64}`);
-          return;
-        }
-
-        if (!TEXT_EXTENSIONS.includes(ext)) {
-          setError(`Preview not available for .${ext} files.`);
-          return;
-        }
-
-        const fileContent = await tauriAPI.readFile(filePath);
-        if (fileContent.length > 1024 * 1024) {
-          const sizeMB = (fileContent.length / (1024 * 1024)).toFixed(1);
-          setError(`File too large to preview (${sizeMB} MB).`);
-          return;
-        }
-        setContent(fileContent);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load file');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    load();
-  }, [filePath, fileName]);
-
-  const ext = fileName.split('.').pop()?.toLowerCase() || '';
-  const isImage = IMAGE_EXTENSIONS.includes(ext);
-  const language = LANGUAGE_MAP[ext] || 'plaintext';
-
-  let highlightedContent = content;
-  if (content && language !== 'plaintext') {
-    try {
-      highlightedContent = hljs.highlight(content, { language }).value;
-    } catch {
-      highlightedContent = content;
-    }
-  }
+  // Use dark theme when app theme is dark-ish (bg is dark)
+  const isDarkTheme = currentTheme.colors.bg < '#888888';
+  const cmTheme = isDarkTheme ? oneDark : EditorView.theme({
+    '&': { backgroundColor: 'var(--theme-bg)', color: 'var(--theme-text)' },
+    '.cm-content': { caretColor: 'var(--theme-accent)' },
+    '.cm-cursor': { borderLeftColor: 'var(--theme-accent)' },
+    '.cm-gutters': { backgroundColor: 'var(--theme-sidebarBg)', borderRight: '1px solid var(--theme-border)', color: 'var(--theme-textSecondary)' },
+    '.cm-activeLineGutter': { backgroundColor: 'var(--theme-hover)' },
+    '.cm-activeLine': { backgroundColor: 'var(--theme-hover)' },
+    '.cm-selectionBackground, ::selection': { backgroundColor: 'var(--theme-accent)33' },
+  });
 
   return (
-    <div className="flex flex-col flex-shrink-0" style={{ height: panelHeight, backgroundColor: 'var(--theme-sidebarBg)' }}>
+    <div
+      className="flex flex-col flex-shrink-0"
+      style={{
+        height: panelHeight,
+        backgroundColor: 'var(--theme-sidebarBg)',
+        transform: isClosing ? 'translateX(-100%)' : 'translateX(0)',
+        transition: isClosing ? 'transform 0.5s ease-in-out' : 'none',
+        overflow: 'hidden',
+      }}
+    >
       {/* Drag handle */}
       <div
         onMouseDown={handleResizeStart}
         className="h-1 flex-shrink-0 cursor-row-resize hover:bg-blue-400 active:bg-blue-500 transition-colors border-t"
         style={{ backgroundColor: 'transparent', borderColor: 'var(--theme-border)' }}
-        title="Drag to resize preview"
+        title="Drag to resize"
       />
+
       {/* Panel header */}
       <div className="flex items-center justify-between px-3 py-2 flex-shrink-0 border-b" style={{ borderColor: 'var(--theme-border)' }}>
         <div className="flex items-center gap-1.5 min-w-0">
-          <span className="text-xs font-semibold tracking-wide flex-shrink-0" style={{ color: 'var(--theme-textSecondary)' }}>PREVIEW</span>
-          <span className="text-xs truncate" style={{ color: 'var(--theme-text)' }} title={fileName}>{fileName}</span>
+          <span className="text-xs font-semibold tracking-wide flex-shrink-0" style={{ color: 'var(--theme-textSecondary)' }}>
+            PREVIEW
+          </span>
+          <span className="text-xs truncate" style={{ color: 'var(--theme-text)' }} title={fileName}>
+            {fileName}
+          </span>
         </div>
         <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
           <button
-            onClick={onExpand}
-            className="px-3 py-1.5 rounded-lg border transition-colors text-xs font-medium flex items-center gap-1.5"
+            onClick={() => animateClose(onExpand)}
+            className="px-3 py-1.5 rounded-lg border transition-colors text-xs font-medium"
             style={{
               backgroundColor: 'var(--theme-bg)',
               borderColor: 'var(--theme-border)',
@@ -147,16 +120,15 @@ export function FilePreviewPanel({ filePath, fileName, onClose, onExpand }: File
             }}
             onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--theme-hover)'; }}
             onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'var(--theme-bg)'; }}
-            title="Open in full window"
+            title={isText ? 'Open in editor tab' : 'Expand view'}
           >
-            <span>⛶</span>
-            <span>Expand</span>
+            {isText ? 'Edit' : 'Expand'}
           </button>
           <button
-            onClick={onClose}
+            onClick={() => animateClose()}
             className="text-sm leading-none hover:opacity-70 transition-opacity"
             style={{ color: 'var(--theme-textSecondary)' }}
-            title="Close preview"
+            title="Close"
           >
             ×
           </button>
@@ -183,21 +155,46 @@ export function FilePreviewPanel({ filePath, fileName, onClose, onExpand }: File
               src={imageData}
               alt={fileName}
               className="max-w-full max-h-full object-contain"
-              onError={() => { setError('Failed to load image'); setImageData(''); }}
             />
           </div>
         )}
 
-        {!isLoading && !error && content && !isImage && (
-          <pre className="p-2 text-xs leading-relaxed overflow-x-auto h-full" style={{ margin: 0 }}>
-            <code
-              className={`hljs language-${language}`}
-              dangerouslySetInnerHTML={{ __html: highlightedContent }}
-            />
-          </pre>
+        {!isLoading && !error && isText && (
+          <CodeMirror
+            value={content}
+            height="100%"
+            extensions={[
+              ...(languageExt ? [languageExt] : []),
+              EditorView.lineWrapping,
+            ]}
+            theme={cmTheme}
+            editable={false}
+            readOnly={true}
+            basicSetup={{
+              lineNumbers: true,
+              foldGutter: true,
+              highlightActiveLine: true,
+              highlightSelectionMatches: true,
+              bracketMatching: true,
+              closeBrackets: false,
+              autocompletion: false,
+              indentOnInput: false,
+            }}
+            style={{ height: '100%', fontSize: '12px' }}
+          />
         )}
 
-        {!isLoading && !error && !content && !imageData && (
+        {!isLoading && !error && isPdf && pdfBlobUrl && (
+          <iframe
+            src={pdfBlobUrl}
+            title={fileName}
+            className="w-full h-full border-0"
+            onLoad={() => console.log('[FilePreviewPanel] PDF iframe loaded:', fileName)}
+            onError={() => console.error('[FilePreviewPanel] PDF iframe failed to load:', fileName)}
+          />
+        )}
+
+        {!isLoading && !error && !content && !imageData && !pdfBlobUrl && (
           <div className="flex items-center justify-center h-full text-xs" style={{ color: 'var(--theme-textSecondary)' }}>
             File is empty
           </div>

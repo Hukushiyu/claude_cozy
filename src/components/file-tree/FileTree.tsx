@@ -4,7 +4,6 @@ import { useSettingsStore } from '../../stores/settingsStore';
 import { useTabStore } from '../../stores/tabStore';
 import { FileNode } from '../../types/ipc';
 import { FilePreviewPanel } from './FilePreviewPanel';
-import { FilePreviewModal } from './FilePreviewModal';
 import { ContextMenu } from './ContextMenu';
 import { SessionBrowser } from '../chat/SessionBrowser';
 import path from 'path-browserify';
@@ -37,7 +36,6 @@ export function FileTree() {
   // Get file tree from active tab
   const { fileTree, isLoadingTree } = getActiveFileTreeState();
   const [previewFile, setPreviewFile] = useState<{ path: string; name: string } | null>(null);
-  const [modalFile, setModalFile] = useState<{ path: string; name: string } | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const { setDraggedFile } = useDragStore();
   const [contextMenu, setContextMenu] = useState<{
@@ -498,7 +496,19 @@ export function FileTree() {
             node={node}
             level={0}
             rootPath={projectPath}
-            onFileClick={(path, name) => setPreviewFile({ path, name })}
+            onFileClick={(path, name) => {
+              setPreviewFile({ path, name });
+            }}
+            onFileDoubleClick={(path, name) => {
+              const { getActiveTab, openFileTab } = useTabStore.getState();
+              const activeTab = getActiveTab();
+              if (!activeTab) return;
+              if (activeTab.openFileTabs.length >= 5) {
+                console.warn('[FileTree] Max 5 file tabs open');
+                return;
+              }
+              openFileTab(activeTab.id, path, name);
+            }}
             onContextMenu={handleContextMenu}
             onInsertReference={handleInsertReference}
             searchQuery={searchQuery}
@@ -511,16 +521,18 @@ export function FileTree() {
           filePath={previewFile.path}
           fileName={previewFile.name}
           onClose={() => setPreviewFile(null)}
-          onExpand={() => setModalFile(previewFile)}
+          onExpand={() => {
+            const { getActiveTab, openFileTab } = useTabStore.getState();
+            const activeTab = getActiveTab();
+            if (!activeTab || !previewFile) return;
+            if (activeTab.openFileTabs.length >= 5) {
+              console.warn('[FileTree] Max 5 file tabs open');
+              return;
+            }
+            openFileTab(activeTab.id, previewFile.path, previewFile.name);
+          }}
         />
       )}
-
-      <FilePreviewModal
-        isOpen={modalFile !== null}
-        onClose={() => setModalFile(null)}
-        filePath={modalFile?.path || ''}
-        fileName={modalFile?.name || ''}
-      />
 
       {contextMenu && (
         <ContextMenu
@@ -565,12 +577,13 @@ interface FileTreeNodeProps {
   level: number;
   rootPath: string;
   onFileClick: (path: string, name: string) => void;
+  onFileDoubleClick?: (path: string, name: string) => void;
   onContextMenu: (e: React.MouseEvent, node: FileNode) => void;
   onInsertReference?: (reference: string) => void;
   searchQuery: string;
 }
 
-function FileTreeNode({ node, level, rootPath, onFileClick, onContextMenu, onInsertReference, searchQuery }: FileTreeNodeProps) {
+function FileTreeNode({ node, level, rootPath, onFileClick, onFileDoubleClick, onContextMenu, onInsertReference, searchQuery }: FileTreeNodeProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [children, setChildren] = useState<FileNode[]>(node.children || []);
   const [isLoading, setIsLoading] = useState(false);
@@ -632,6 +645,14 @@ function FileTreeNode({ node, level, rootPath, onFileClick, onContextMenu, onIns
     }
   };
 
+  const handleDoubleClick = (e: React.MouseEvent) => {
+    if (node.type === 'file' && onFileDoubleClick) {
+      e.preventDefault();
+      const absolutePath = path.join(rootPath, node.path);
+      onFileDoubleClick(absolutePath, node.name);
+    }
+  };
+
   const paddingLeft = level * 16;
 
   // Highlight matching text
@@ -666,6 +687,7 @@ function FileTreeNode({ node, level, rootPath, onFileClick, onContextMenu, onIns
       <div
         className="flex items-center gap-1 px-2 py-1 cursor-pointer rounded text-sm relative transition-colors"
         onClick={handleClick}
+        onDoubleClick={handleDoubleClick}
         onContextMenu={(e) => onContextMenu(e, node)}
         onMouseEnter={(e) => {
           setIsHovering(true);
@@ -712,6 +734,7 @@ function FileTreeNode({ node, level, rootPath, onFileClick, onContextMenu, onIns
               level={level + 1}
               rootPath={rootPath}
               onFileClick={onFileClick}
+              onFileDoubleClick={onFileDoubleClick}
               onContextMenu={onContextMenu}
               onInsertReference={onInsertReference}
               searchQuery={searchQuery}

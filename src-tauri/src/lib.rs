@@ -3,6 +3,8 @@
 
 mod commands;
 
+use tauri::{Emitter, Manager};
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
   tauri::Builder::default()
@@ -17,13 +19,21 @@ pub fn run() {
             .level(log::LevelFilter::Info)
             .build(),
         )?;
-
-        // DevTools can be opened manually with F12 or by adding devtools feature flag
-        // Commenting out auto-open to avoid build errors when devtools feature is not enabled
-        // let window = app.get_webview_window("main").unwrap();
-        // #[cfg(debug_assertions)]
-        // window.open_devtools();
       }
+
+      // Intercept window close so frontend can prompt about unsaved files
+      let window = app.get_webview_window("main").unwrap();
+      let window_clone = window.clone();
+      window.on_window_event(move |event| {
+        if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+          println!("[APP] CloseRequested intercepted - preventing default, emitting to frontend");
+          api.prevent_close();
+          window_clone.emit("app:close-requested", ()).unwrap_or_else(|e| {
+            println!("[APP] Failed to emit close-requested: {}", e);
+          });
+        }
+      });
+
       Ok(())
     })
     .invoke_handler(tauri::generate_handler![
@@ -45,6 +55,7 @@ pub fn run() {
       commands::chat::get_permission_mode,
       commands::chat::approve_session,
       commands::chat::send_permission_response,
+      commands::chat::confirm_close,
       commands::permissions::set_project_approval,
       commands::permissions::get_project_approval,
       commands::history::list_sessions,

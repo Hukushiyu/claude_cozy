@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { listen } from '@tauri-apps/api/event';
 import { ChatInterface } from '../chat/ChatInterface';
 import { FileTree } from '../file-tree/FileTree';
 import { ApiKeyDialog } from './ApiKeyDialog';
@@ -7,10 +8,13 @@ import { CommandsModal } from '../help/CommandsModal';
 import { SettingsModal } from '../settings/SettingsModal';
 import { SkillsModal } from '../skills/SkillsModal';
 import { TabBar } from '../tabs/TabBar';
+import { InnerTabBar } from '../tabs/InnerTabBar';
+import { FileEditorPane } from '../editor/FileEditorPane';
 import { useProjectStore } from '../../stores/projectStore';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { useSkillsStore } from '../../stores/skillsStore';
 import { useTabStore } from '../../stores/tabStore';
+import { useFileEditorStore } from '../../stores/fileEditorStore';
 import { tauriAPI } from '../../utils/tauri-api';
 import { APP_VERSION } from '../../version';
 import { logWithTimestamp } from '../../utils/logger';
@@ -21,6 +25,21 @@ const SIDEBAR_MAX = 480;
 const SIDEBAR_DEFAULT = 256;
 
 logWithTimestamp('[AppShell.tsx] Module loaded');
+
+function ActiveFileEditor() {
+  const { getActiveTab, closeFileTab } = useTabStore();
+  const activeTab = getActiveTab();
+  if (!activeTab) return <ChatInterface />;
+  const fileTab = activeTab.openFileTabs.find(f => f.filePath === activeTab.activeInnerTab);
+  if (!fileTab) return <ChatInterface />;
+  return (
+    <FileEditorPane
+      filePath={fileTab.filePath}
+      fileName={fileTab.fileName}
+      onCloseRequest={() => closeFileTab(activeTab.id, fileTab.filePath)}
+    />
+  );
+}
 
 export function AppShell() {
   logWithTimestamp('[AppShell] Component function called');
@@ -39,10 +58,12 @@ export function AppShell() {
   const [showSkillsModal, setShowSkillsModal] = useState(false);
   const [cliError, setCliError] = useState<string | null>(null);
   const [isVerifyingCli, setIsVerifyingCli] = useState(false);
+  const [showClosePrompt, setShowClosePrompt] = useState(false);
   const { projectPath, selectProject } = useProjectStore();
   const { assistantName, loadSettings } = useSettingsStore();
-  const { loadCustomSkills } = useSkillsStore();
+  const { loadCustomSkills, initPluginListener } = useSkillsStore();
   const { loadTabs } = useTabStore();
+  const { getDirtyPaths } = useFileEditorStore();
 
   // Load settings on mount
   useEffect(() => {
@@ -57,11 +78,34 @@ export function AppShell() {
     loadCustomSkills();
   }, [loadCustomSkills]);
 
+  // Initialize plugin listener (listens for chat:plugins-loaded from Rust)
+  useEffect(() => {
+    const cleanup = initPluginListener();
+    return cleanup;
+  }, [initPluginListener]);
+
   // Load tabs from localStorage on mount
   useEffect(() => {
     logWithTimestamp('[AppShell] Loading tabs');
     loadTabs();
   }, [loadTabs]);
+
+  // Listen for window close request from Rust — show save prompt if dirty files exist
+  useEffect(() => {
+    let unlisten: (() => void) | null = null;
+    listen('app:close-requested', () => {
+      console.log('[AppShell] app:close-requested received from Rust');
+      const dirty = getDirtyPaths();
+      console.log('[AppShell] Dirty file paths:', dirty);
+      if (dirty.length > 0) {
+        setShowClosePrompt(true);
+      } else {
+        console.log('[AppShell] No dirty files, closing immediately');
+        tauriAPI.confirmClose();
+      }
+    }).then(fn => { unlisten = fn; });
+    return () => { if (unlisten) unlisten(); };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Check Claude CLI installation and authentication (first launch only, after project selection)
   useEffect(() => {
@@ -108,6 +152,12 @@ export function AppShell() {
   useEffect(() => {
     // Tauri always uses CLI auth, no API key dialog needed
   }, []);
+
+  // Track active inner tab to switch between chat and file editor
+  const activeInnerTab = useTabStore(state => {
+    const active = state.tabs.find(t => t.id === state.activeTabId);
+    return active?.activeInnerTab ?? 'chat';
+  });
 
   // Show project selection modal only if no tabs exist
   // Use selector to ensure we subscribe to tab changes
@@ -275,6 +325,93 @@ export function AppShell() {
       <CommandsModal isOpen={showCommandsModal} onClose={() => setShowCommandsModal(false)} />
       <SettingsModal isOpen={showSettingsModal} onClose={() => setShowSettingsModal(false)} />
       <SkillsModal isOpen={showSkillsModal} onClose={() => setShowSkillsModal(false)} />
+
+      {/* Unsaved files prompt on app close */}
+      {showClosePrompt && (() => {
+        const dirtyPaths = getDirtyPaths();
+        return (
+          <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[200]">
+            <div
+              className="rounded-lg shadow-2xl w-[440px] p-6"
+              style={{ backgroundColor: 'var(--theme-bg)' }}
+            >
+              <h3 className="text-base font-semibold mb-2" style={{ color: 'var(--theme-text)' }}>
+                Unsaved changes
+              </h3>
+              <p className="text-sm mb-3" style={{ color: 'var(--theme-textSecondary)' }}>
+                The following files have unsaved changes:
+              </p>
+              <ul className="mb-5 space-y-1 max-h-40 overflow-y-auto">
+                {dirtyPaths.map(p => (
+                  <li key={p} className="text-xs font-mono px-2 py-1 rounded truncate" style={{ backgroundColor: 'var(--theme-hover)', color: 'var(--theme-text)' }}>
+                    {p.split(/[\\/]/).pop()}
+                    <span className="ml-1" style={{ color: 'var(--theme-textSecondary)' }}>●</span>
+                  </li>
+                ))}
+              </ul>
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => {
+                    console.log('[AppShell] User cancelled close');
+                    setShowClosePrompt(false);
+                  }}
+                  className="px-4 py-2 rounded text-sm transition-opacity"
+                  style={{ backgroundColor: 'var(--theme-hover)', color: 'var(--theme-text)' }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    console.log('[AppShell] User chose Discard All — scrubbing buffers and closing');
+                    const { getDirtyPaths: getDirty, discardBuffer } = useFileEditorStore.getState();
+                    getDirty().forEach(p => {
+                      console.log('[AppShell] Discarding buffer for:', p);
+                      discardBuffer(p);
+                    });
+                    setShowClosePrompt(false);
+                    tauriAPI.confirmClose();
+                  }}
+                  className="px-4 py-2 rounded text-sm transition-opacity"
+                  style={{ backgroundColor: '#dc2626', color: '#fff' }}
+                >
+                  Discard & Close
+                </button>
+                <button
+                  onClick={async () => {
+                    console.log('[AppShell] User chose Save All — saving', dirtyPaths.length, 'files');
+                    const { buffers: currentBuffers } = useFileEditorStore.getState();
+                    const saveErrors: string[] = [];
+                    for (const filePath of dirtyPaths) {
+                      const entry = currentBuffers[filePath];
+                      if (entry && entry.content !== entry.savedContent) {
+                        try {
+                          await tauriAPI.writeFile(filePath, entry.content);
+                          useFileEditorStore.getState().markSaved(filePath);
+                          console.log('[AppShell] Saved:', filePath);
+                        } catch (err) {
+                          console.error('[AppShell] Failed to save:', filePath, err);
+                          saveErrors.push(filePath.split(/[\\/]/).pop() || filePath);
+                        }
+                      }
+                    }
+                    if (saveErrors.length > 0) {
+                      console.error('[AppShell] Some files failed to save:', saveErrors);
+                      // Keep dialog open so user can see what failed
+                    } else {
+                      setShowClosePrompt(false);
+                      tauriAPI.confirmClose();
+                    }
+                  }}
+                  className="px-4 py-2 rounded text-sm font-medium transition-opacity"
+                  style={{ backgroundColor: 'var(--theme-accent)', color: '#fff' }}
+                >
+                  Save All & Close
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* CLI Verification Loading Overlay (first launch only) */}
       {isVerifyingCli && (
@@ -460,8 +597,11 @@ export function AppShell() {
           </div>
         </div>
 
-        {/* Tab Bar - Full Width */}
+        {/* Project Tab Bar */}
         <TabBar />
+
+        {/* Inner Tab Bar (Chat + open file tabs) */}
+        <InnerTabBar />
 
         {/* CLI Error Banner */}
         {cliError && (
@@ -506,9 +646,13 @@ export function AppShell() {
           </div>
         )}
 
-        {/* Chat */}
+        {/* Content: Chat or File Editor */}
         <div className="flex-1 min-h-0">
-          <ChatInterface />
+          {activeInnerTab === 'chat' ? (
+            <ChatInterface />
+          ) : (
+            <ActiveFileEditor />
+          )}
         </div>
       </div>
         </div>

@@ -3,6 +3,11 @@ import { useChatStore } from './chatStore';
 import type { FileNode } from '../types/ipc';
 import { tauriAPI } from '../utils/tauri-api';
 
+export interface FileTab {
+  filePath: string;
+  fileName: string;
+}
+
 export interface Tab {
   id: string;
   projectPath: string;
@@ -12,6 +17,8 @@ export interface Tab {
   selectedModel: string;
   createdAt: number;
   totalTokens?: number; // Running total of tokens used in this session
+  openFileTabs: FileTab[];        // ordered list, max 5
+  activeInnerTab: 'chat' | string; // 'chat' or a filePath string
 }
 
 interface TabFileTreeState {
@@ -32,6 +39,11 @@ interface TabStore {
   removeTab: (tabId: string) => void;
   switchTab: (tabId: string) => void;
   updateTab: (tabId: string, updates: Partial<Tab>) => void;
+
+  // Inner file tab operations
+  openFileTab: (tabId: string, filePath: string, fileName: string) => void;
+  closeFileTab: (tabId: string, filePath: string) => void;
+  setActiveInnerTab: (tabId: string, innerTab: string) => void;
 
   // Getters
   getActiveTab: () => Tab | null;
@@ -79,7 +91,9 @@ export const useTabStore = create<TabStore>((set, get) => ({
       sessionId: null,
       permissionMode,
       selectedModel,
-      createdAt: Date.now()
+      createdAt: Date.now(),
+      openFileTabs: [],
+      activeInnerTab: 'chat',
     };
 
     console.log('[TabStore] Adding tab:', newTab);
@@ -197,6 +211,55 @@ export const useTabStore = create<TabStore>((set, get) => ({
     get().saveTabs();
   },
 
+  openFileTab: (tabId, filePath, fileName) => {
+    const state = get();
+    const tab = state.tabs.find(t => t.id === tabId);
+    if (!tab) return;
+
+    // Already open — just switch to it
+    if (tab.openFileTabs.some(f => f.filePath === filePath)) {
+      get().setActiveInnerTab(tabId, filePath);
+      return;
+    }
+
+    // At cap — do nothing (caller shows toast)
+    if (tab.openFileTabs.length >= 5) return;
+
+    const updatedTabs = state.tabs.map(t =>
+      t.id === tabId
+        ? { ...t, openFileTabs: [...t.openFileTabs, { filePath, fileName }], activeInnerTab: filePath }
+        : t
+    );
+    set({ tabs: updatedTabs });
+    get().saveTabs();
+  },
+
+  closeFileTab: (tabId, filePath) => {
+    const state = get();
+    const tab = state.tabs.find(t => t.id === tabId);
+    if (!tab) return;
+
+    const newFileTabs = tab.openFileTabs.filter(f => f.filePath !== filePath);
+    // If closing the active file tab, fall back to chat
+    const newActiveInnerTab = tab.activeInnerTab === filePath ? 'chat' : tab.activeInnerTab;
+
+    const updatedTabs = state.tabs.map(t =>
+      t.id === tabId
+        ? { ...t, openFileTabs: newFileTabs, activeInnerTab: newActiveInnerTab }
+        : t
+    );
+    set({ tabs: updatedTabs });
+    get().saveTabs();
+  },
+
+  setActiveInnerTab: (tabId, innerTab) => {
+    const updatedTabs = get().tabs.map(t =>
+      t.id === tabId ? { ...t, activeInnerTab: innerTab } : t
+    );
+    set({ tabs: updatedTabs });
+    get().saveTabs();
+  },
+
   getActiveTab: () => {
     const state = get();
     if (!state.activeTabId) return null;
@@ -252,7 +315,11 @@ export const useTabStore = create<TabStore>((set, get) => ({
         const data = JSON.parse(saved);
         console.log('[TabStore] Loaded', data.tabs?.length || 0, 'tabs from localStorage');
         set({
-          tabs: data.tabs || [],
+          tabs: (data.tabs || []).map((t: Tab) => ({
+            ...t,
+            openFileTabs: t.openFileTabs || [],
+            activeInnerTab: t.activeInnerTab || 'chat',
+          })),
           activeTabId: data.activeTabId || null
         });
       } else {
